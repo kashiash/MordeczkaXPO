@@ -16,7 +16,7 @@ namespace XafXPODynAssem.Win
         public XafXPODynAssemWindowsFormsApplication()
         {
             SplashScreen = new DXSplashScreen(typeof(XafSplashScreen), new DefaultOverlayFormOptions());
-            ApplicationName = "XafXPODynAssem";
+            ApplicationName = "Mordeczka XPO";
             CheckCompatibilityType = DevExpress.ExpressApp.CheckCompatibilityType.DatabaseSchema;
             UseOldTemplates = false;
             DatabaseVersionMismatch += XafXPODynAssemWindowsFormsApplication_DatabaseVersionMismatch;

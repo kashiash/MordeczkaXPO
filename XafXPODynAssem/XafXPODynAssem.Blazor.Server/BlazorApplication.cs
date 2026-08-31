@@ -14,7 +14,7 @@ namespace XafXPODynAssem.Blazor.Server
     {
         public XafXPODynAssemBlazorApplication()
         {
-            ApplicationName = "Mordeczka";   // nazwa wyswietlana; identyfikatory projektu zostaja
+            ApplicationName = "Mordeczka XPO";   // nazwa wyswietlana; identyfikatory projektu zostaja
             CheckCompatibilityType = DevExpress.ExpressApp.CheckCompatibilityType.DatabaseSchema;
             DatabaseVersionMismatch += XafXPODynAssemBlazorApplication_DatabaseVersionMismatch;
         }
