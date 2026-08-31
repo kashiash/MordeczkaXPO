@@ -200,6 +200,38 @@ namespace XafXPODynAssem.Blazor.Server
                 endpoints.MapFallbackToPage("/_Host");
                 endpoints.MapControllers();
 
+                // PROTOTYP DO WYRZUCENIA (galaz eksperyment/pomiar-regul):
+                // liczniki GC i liczniki wywolan handlerow regul wygladu.
+                endpoints.MapGet("/pomiar/stan", async context =>
+                {
+                    var rozklad = string.Join(",", XafXPODynAssem.Blazor.Server.Controllers.PomiarCustomizeElementController
+                        .RozkladElementow.OrderBy(p => p.Key).Select(p => $"\"{p.Key}\":{p.Value}"));
+                    string json = "{" +
+                        $"\"tryb\":\"{XafXPODynAssem.Module.Pomiar.PomiarKonfiguracja.Tryb}\"," +
+                        $"\"ce\":\"{XafXPODynAssem.Module.Pomiar.PomiarKonfiguracja.TrybCe}\"," +
+                        $"\"strona\":{XafXPODynAssem.Module.Pomiar.PomiarKonfiguracja.RozmiarStrony}," +
+                        $"\"mnoznik\":{XafXPODynAssem.Module.Pomiar.PomiarKonfiguracja.MnoznikRegul}," +
+                        $"\"gen0\":{GC.CollectionCount(0)},\"gen1\":{GC.CollectionCount(1)},\"gen2\":{GC.CollectionCount(2)}," +
+                        $"\"alokacjeBajty\":{GC.GetTotalAllocatedBytes(false)}," +
+                        $"\"pamiecBajty\":{GC.GetTotalMemory(false)}," +
+                        $"\"wywolaniaCe\":{XafXPODynAssem.Module.Pomiar.PomiarLicznik.WywolaniaCe}," +
+                        $"\"trafieniaCe\":{XafXPODynAssem.Module.Pomiar.PomiarLicznik.WywolaniaCeZTrafieniem}," +
+                        $"\"zebraniaRegul\":{XafXPODynAssem.Module.Pomiar.PomiarLicznik.ZebranieRegul}," +
+                        $"\"budowyEvaluatora\":{XafXPODynAssem.Module.Pomiar.PomiarLicznik.BudowaEvaluatora}," +
+                        $"\"zastosowania\":{XafXPODynAssem.Module.Pomiar.PomiarLicznik.Zastosowania}," +
+                        $"\"rozkladElementow\":{{{rozklad}}}" +
+                        "}";
+                    context.Response.ContentType = "application/json";
+                    await context.Response.WriteAsync(json);
+                }).AllowAnonymous();
+
+                endpoints.MapGet("/pomiar/zeruj", async context =>
+                {
+                    XafXPODynAssem.Module.Pomiar.PomiarLicznik.Zeruj();
+                    XafXPODynAssem.Blazor.Server.Controllers.PomiarCustomizeElementController.RozkladElementow.Clear();
+                    await context.Response.WriteAsync("ok");
+                }).AllowAnonymous();
+
                 // Wylogowanie po bezczynnosci konczy sie tutaj. Samo skasowanie
                 // ciasteczka w przegladarce nie wystarcza: sesja XAF zyje po stronie
                 // serwera i trzeba ja zamknac jawnie. Wzorzec sprawdzony w HIS.
