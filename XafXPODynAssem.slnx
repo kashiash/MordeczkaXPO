@@ -7,4 +7,5 @@
   <Project Path="XafXPODynAssem/XafXPODynAssem.Blazor.Server/XafXPODynAssem.Blazor.Server.csproj" />
   <Project Path="XafXPODynAssem/XafXPODynAssem.Module/XafXPODynAssem.Module.csproj" />
   <Project Path="XafXPODynAssem/XafXPODynAssem.Win/XafXPODynAssem.Win.csproj" />
+  <Project Path="XafXPODynAssem/XafXPODynAssem.Module.Tests/XafXPODynAssem.Module.Tests.csproj" />
 </Solution>
