@@ -96,6 +96,9 @@ namespace XafXPODynAssem.Module
             AdditionalExportedTypes.Add(typeof(DevExpress.Persistent.BaseImpl.HCategory));
             AdditionalExportedTypes.Add(typeof(BusinessObjects.CustomClass));
             AdditionalExportedTypes.Add(typeof(BusinessObjects.CustomField));
+            AdditionalExportedTypes.Add(typeof(BusinessObjects.AppearanceRuleData));
+            // Existing production prototype referenced by its controllers; keep it in the XPO schema.
+            AdditionalExportedTypes.Add(typeof(BusinessObjects.PomiarFaktura));
             AdditionalExportedTypes.Add(typeof(BusinessObjects.SchemaHistory));
             AdditionalExportedTypes.Add(typeof(BusinessObjects.AIChat));
             AdditionalExportedTypes.Add(typeof(BusinessObjects.UserHubPreference));

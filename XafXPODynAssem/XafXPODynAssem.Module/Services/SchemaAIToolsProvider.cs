@@ -1,8 +1,10 @@
 using System.ComponentModel;
+using System.Drawing;
 using System.Text;
 using System.Text.Json;
 using DevExpress.Data.Filtering;
 using DevExpress.ExpressApp;
+using DevExpress.ExpressApp.Editors;
 using DevExpress.Persistent.Base.ReportsV2;
 using DevExpress.XtraReports.UI;
 using DevExpress.XtraReports.Wizards;
@@ -65,6 +67,10 @@ public sealed class SchemaAIToolsProvider
             AIFunctionFactory.Create(CreateWorkflow, "create_workflow"),
             AIFunctionFactory.Create(AddWorkflowState, "add_workflow_state"),
             AIFunctionFactory.Create(AddWorkflowTransition, "add_workflow_transition"),
+            // Conditional Appearance tools (rules are data and are live without deploy)
+            AIFunctionFactory.Create(ListAppearanceRules, "list_appearance_rules"),
+            AIFunctionFactory.Create(CreateAppearanceRule, "create_appearance_rule"),
+            AIFunctionFactory.Create(SetAppearanceRuleDisabled, "set_appearance_rule_disabled"),
         };
     }
 
@@ -2539,6 +2545,55 @@ public sealed class SchemaAIToolsProvider
     }
 
     // ==========================================================================
+    [Description("List Conditional Appearance rules. Optional targetType filters by entity name.")]
+    private string ListAppearanceRules(string targetType = null)
+    {
+        try
+        {
+            using var scope = CreateObjectSpace();
+            var rules = scope.Os.GetObjectsQuery<AppearanceRuleData>().Where(r => string.IsNullOrWhiteSpace(targetType) || r.DataTypeName.EndsWith("." + targetType) || r.DataTypeName == targetType).OrderBy(r => r.DataTypeName).ThenBy(r => r.Priority).ThenBy(r => r.Name).ToList();
+            if (rules.Count == 0) return "No Conditional Appearance rules found.";
+            var sb = new StringBuilder("| Name | Entity | View | Criteria | Target items | Back color | Font color | IsDisabled |\n|---|---|---|---|---|---|---|---|\n");
+            foreach (var r in rules) sb.AppendLine($"| {r.Name} | {r.DataTypeName} | {r.ViewId} | {r.Criteria} | {r.TargetItems} | {r.BackColor} | {r.FontColor} | {r.IsDisabled} |");
+            return sb.ToString();
+        }
+        catch (Exception ex) { _logger.LogError(ex, "[Tool:list_appearance_rules] Error"); return $"Error listing appearance rules: {ex.Message}"; }
+    }
+
+    [Description("Create a data-driven XAF Conditional Appearance rule. targetType is entity simple/full name; criteria is XAF criteria; targetItems is comma-separated properties or *; context is Any, DetailView or ListView; colors are names or #RRGGBB. No Deploy/restart is needed.")]
+    private string CreateAppearanceRule(string name, string targetType, string criteria = "", string targetItems = "*", string context = "Any", int priority = 0, string backColor = null, string fontColor = null, string fontStyle = null, string visibility = null, bool isDisabled = false, string viewId = null)
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(name) || string.IsNullOrWhiteSpace(targetType)) return "Error: name and targetType are required.";
+            var type = ResolveAppearanceType(targetType);
+            if (type == null) return $"Error: entity '{targetType}' is not a live XAF type. Use get_active_schema first.";
+            if (!string.IsNullOrWhiteSpace(criteria)) CriteriaOperator.Parse(criteria);
+            if (!Enum.TryParse<AppearanceContext>(context, true, out var parsedContext)) return "Error: context must be Any, DetailView or ListView.";
+            if (!TryColor(backColor, out var bg) || !TryColor(fontColor, out var fg)) return "Error: colors must be named colors or #RRGGBB.";
+            AppearanceFontStyle? parsedFont = null;
+            if (!string.IsNullOrWhiteSpace(fontStyle)) { if (!Enum.TryParse<AppearanceFontStyle>(fontStyle, true, out var fs)) return "Error: invalid fontStyle."; parsedFont = fs; }
+            ViewItemVisibility? parsedVisibility = null;
+            if (!string.IsNullOrWhiteSpace(visibility)) { if (!Enum.TryParse<ViewItemVisibility>(visibility, true, out var v)) return "Error: invalid visibility."; parsedVisibility = v; }
+            using var scope = CreateObjectSpace(); var view = viewId ?? "";
+            if (scope.Os.GetObjectsQuery<AppearanceRuleData>().Any(r => r.Name == name && r.DataTypeName == type.FullName && r.ViewId == view)) return $"Error: rule '{name}' already exists for '{type.Name}'.";
+            var rule = scope.Os.CreateObject<AppearanceRuleData>();
+            rule.Name = name; rule.DataTypeName = type.FullName; rule.Criteria = criteria ?? ""; rule.TargetItems = string.IsNullOrWhiteSpace(targetItems) ? "*" : targetItems; rule.Context = parsedContext.ToString(); rule.Priority = priority; rule.BackColor = bg; rule.FontColor = fg; rule.FontStyle = parsedFont; rule.Visibility = parsedVisibility; rule.IsDisabled = isDisabled; rule.ViewId = view;
+            scope.Os.CommitChanges(); return $"Conditional Appearance rule '{name}' created for '{type.Name}'. IsDisabled={isDisabled}. Refresh/open the view; no Deploy or restart is needed.";
+        }
+        catch (Exception ex) { _logger.LogError(ex, "[Tool:create_appearance_rule] Error"); return $"Error creating appearance rule: {ex.Message}"; }
+    }
+
+    [Description("Enable or disable a Conditional Appearance rule without deleting it. isDisabled=false activates it, true turns it off.")]
+    private string SetAppearanceRuleDisabled(string name, bool isDisabled, string targetType = null)
+    {
+        try { using var scope = CreateObjectSpace(); var q = scope.Os.GetObjectsQuery<AppearanceRuleData>().Where(r => r.Name == name); if (!string.IsNullOrWhiteSpace(targetType)) q = q.Where(r => r.DataTypeName.EndsWith("." + targetType) || r.DataTypeName == targetType); var rule = q.FirstOrDefault(); if (rule == null) return $"Error: appearance rule '{name}' was not found."; rule.IsDisabled = isDisabled; scope.Os.CommitChanges(); return $"Appearance rule '{name}' is now {(isDisabled ? "disabled" : "enabled")} (IsDisabled={isDisabled}). Refresh/open the view."; }
+        catch (Exception ex) { _logger.LogError(ex, "[Tool:set_appearance_rule_disabled] Error"); return $"Error changing appearance rule state: {ex.Message}"; }
+    }
+
+    private static Type ResolveAppearanceType(string name) => Type.GetType(name, false) ?? XafXPODynAssemModule.AssemblyManager.RuntimeTypes.FirstOrDefault(t => t.Name == name || t.FullName == name) ?? XafTypesInfo.Instance.PersistentTypes.FirstOrDefault(t => t.Name == name || t.Type.FullName == name)?.Type;
+    private static bool TryColor(string value, out Color? color) { color = null; if (string.IsNullOrWhiteSpace(value)) return true; try { var c = value.StartsWith("#") ? ColorTranslator.FromHtml(value) : Color.FromName(value); if (c == Color.Empty) return false; color = c; return true; } catch { return false; } }
+
     // JSON DTOs for tool parameters
     // ==========================================================================
 
