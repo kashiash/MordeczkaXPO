@@ -1,0 +1,300 @@
+orchestrator:
+  started_phase: phase-8
+  completed_phases: [phase-1, phase-2, phase-4, phase-5, phase-7]
+  failed_phases: []
+
+  auto_fix_attempts:
+    phase-1: 0
+    phase-2: 0
+
+  options:
+    html_output: true
+    mockup_format: html
+    spec_audit_enabled: true
+    skip_test_suite: true
+    e2e_enabled: null
+    user_docs_enabled: null
+    code_review_enabled: true
+    pragmatic_review_enabled: true
+    reality_check_enabled: true
+    production_check_enabled: true
+    sequential: null
+
+  created: 2026-08-31T16:40:49Z
+  updated: 2026-08-31T20:05:00Z
+  task_path: .maister/tasks/development/2026-08-31-regula-wygladu-z-dyktowania
+
+  task_ids: {}
+
+task:
+  title: Reguly wygladu z dyktowania (AI) w mordeczce
+  description: >-
+    Do mordeczki (spolszczony XafXPODynAssem, XPO + Roslyn runtime entities, AI chat
+    z function callingiem w SchemaAIToolsProvider) dochodzi mechanizm regul wygladu
+    sterowanych z bazy — wzorowany na MBrekhof/XafDataDrivenConditionalApp — oraz
+    narzedzie AI, ktore z dyktowanego zdania ("zrob faktury niezaplacone na czerwono
+    na listach") tworzy rekord reguly: typ docelowy, kryterium, kolor, kontekst.
+    Reguly dzialaja bez rekompilacji. Calosc po polsku (nazwy encji, pol, komunikatow),
+    zgodnie z konwencja mordeczki. Na koniec deploy na Proxmox (LXC 200) i test.
+  status: in_progress
+  tags: [xaf, xpo, conditional-appearance, ai-tools, polonizacja, mordeczka]
+  priority: high
+
+task_context:
+  risk_level: null
+  clarifications_resolved: null
+  scope_expanded: null
+  architecture_decision: null
+
+  task_characteristics:
+    has_reproducible_defect: false
+    modifies_existing_code: true
+    creates_new_entities: true
+    involves_data_operations: true
+    ui_heavy: true
+
+  # Rozstrzygniete na bramce fazy 2 (2026-08-31)
+  architecture_decision:
+    decision: Wariant A — ViewController podpiety pod AppearanceController.CollectAppearanceRules
+    rationale: >-
+      Regula czytana z bazy przy kazdej aktywacji widoku. Dziala tak samo w Blazorze
+      i WinForms bez rejestracji w Startup.cs. Propagacja na trzy repliki za darmo,
+      bo nie ma globalnego cache. Wariant B mial dwie niezalezne drogi porazki:
+      procesowy cache modelu aplikacji i dlugo zyjacy klient WinForms.
+    obowiazkowe_konsekwencje:
+      - "Straznik w handlerze: wyjatek w CollectAppearanceRules wywraca CALY widok"
+      - "Regula pre-ladowana w OnActivated — NIGDY zapytanie do bazy w samym handlerze"
+      - "Sekwencja bez odstepstw: ResetRulesCache() -> subskrypcja -> Refresh()"
+      - "Pomijac NonPersistentObjectSpace i sprawdzac ObjectSpace.IsDisposed"
+
+  deployment_decision:
+    decision: "(b) Zgasic trojke, wdrozyc od nowa, przyjac jawna przerwe"
+    rationale: Nic nowego do napisania — trzy-repliki.sh jest sprawdzony; tania i niskiego ryzyka droga na maszynie demo.
+    kroki: ["docker compose down", "nowy obraz", "--updateDatabase dla nowej tabeli", "trzy-repliki.sh", "test osobno na 8101/8102/8103"]
+    uwaga: "README-wdrozenie.md §1 opisuje transfer paczki 223 MB jako krok blokowany dla agenta — ten fragment wykona uzytkownik"
+
+  scope_decisions:
+    - decision: Reguly dostaja wlasny ekran (lista + szczegoly) w nawigacji
+      rationale: >-
+        Kompletnosc CRUD z 40% na 100%. Bez tego jedyna droga cofniecia bledu AI
+        jest SQL w bazie produkcyjnej, a bledna regula dotyka wszystkich uzytkownikow
+        na trzech replikach. Koszt: dwa atrybuty + uprawnienia w Updater.cs, wzorem
+        WorkflowDefinition, bez tykania .xafml.
+    - decision: Graduacja — ostrzezenie ORAZ migracja TargetTypeName
+      rationale: >-
+        GraduationService nie emituje deklaracji namespace, wiec FullName przechodzi
+        z XafXPODynAssem.RuntimeEntities.X na XafXPODynAssem.Module.BusinessObjects.X
+        i kazda regula cicho przestaje kolorowac. Sam fallback na nazwe krotka odrzucony —
+        polskie encje runtime dziela nazwy i prefiksy.
+    - decision: >-
+        Graduacja NIE generuje regul jako atrybutow [Appearance] w kodzie —
+        generuje wylacznie zakomentowana sekcje "--- Appearance Note ---"
+      rationale: >-
+        Rozwazone i odrzucone. Encja graduuje, bo jej ksztalt sie ustabilizowal;
+        regula kolorowania to decyzja operacyjna, ktora zmienia sie dalej — zamrozenie
+        jej w atrybucie znaczy, ze zmiana koloru wymaga przebudowy obrazu, czyli
+        dokladnie tego, czego ta funkcja ma nie wymagac. Do tego [Appearance] przyjmuje
+        BackColor jako konkretny string, wiec zamrozilby odcien i skasowal korzysc
+        z rol semantycznych. I trzecie: regul na jedna encje jest wiele, od roznych osob,
+        czesc zawezona przez ViewId — nie naleza do klasy. Sekcja-notatka jest za darmo,
+        bo GenerateSource ma juz konwencje "--- XPO Note ---" / "--- Web API Note ---".
+    - decision: >-
+        Jeden walidator regul uzyty w trzech miejscach, a niesprawna regula jest
+        WIDOCZNA jako zepsuta, nie pomijana po cichu (doprecyzowanie uzytkownika)
+      rationale: >-
+        We wszystkich czterech repozytoriach referencyjnych niesprawna regula po prostu
+        przestaje dzialac w ciszy — uzytkownik widzi brak koloru i nie wie, czy zle napisal
+        kryterium, czy funkcja nie dziala. Ten sam walidator dziala: (1) w narzedziu AI
+        przed zapisem — odmawia utworzenia bubla, (2) w kontrolerze przy aktywacji widoku —
+        pomija niesprawna zamiast wywalic widok, (3) na ekranie regul — POKAZUJE, ze jest
+        zepsuta i dlaczego.
+      wykrywane_stany:
+        - "NIESPRAWNA: typ sie nie rozwiazuje (XafTypesInfo.FindTypeInfo -> null) — encja usunieta przez delete_entity albo wygraduowana i nazwa nieaktualna"
+        - "NIESPRAWNA: kryterium nie parsuje — CriteriaOperator.Parse rzuca; pokazac komunikat parsera"
+        - "NIESPRAWNA: kryterium wskazuje nieistniejaca wlasciwosc — obejsc drzewo po wezlach OperandProperty i sprawdzic w ITypeInfo.Members; to jest przypadek, ktory potrafi wywrocic widok"
+        - "NIESPRAWNA: pole docelowe z TargetItems nie istnieje na typie"
+        - "OSTRZEZENIE: pole istnieje, ale zostalo ukryte (IsVisibleInListView=false) — regula poprawna, tylko nie ma czego pokolorowac; sankcjonowana sciezka repo 'pol nie usuwamy, ukrywamy je'"
+      gdzie_widac: >-
+        Dwa utrwalone pola na encji — Stan (Sprawna/Ostrzezenie/Niesprawna) i Diagnoza —
+        przeliczane przy zapisie reguly, przy graduacji, przy usuwaniu encji oraz akcja
+        "Sprawdz reguly" na liscie. Utrwalone, zeby lista pokazywala stan bez przeliczania
+        wszystkiego. Niesprawne wiersze kolorowane statycznym [Appearance] na samym ekranie
+        regul — dokladnie jak CustomClass.cs:23-32 koloruje juz wygraduowane encje.
+      skutek_dla_graduacji: >-
+        Graduacja przestaje byc przypadkiem szczegolnym — staje sie jednym z wyzwalaczy
+        przeliczenia. Migracja TargetTypeName nadal naprawia to, co da sie naprawic
+        automatycznie, ale przestaje byc jedyna linia obrony.
+    - decision: Kolor przez ROLE semantyczna, nie surowy ARGB (decyzja z rozmowy)
+      rationale: >-
+        Regula z zapisanym ARGB jest zwiazana z jedna skorka; skorka bywa per uzytkownik.
+        Encja trzyma role (Blad/Ostrzezenie/Sukces/Informacja/Wyciszone/Wyroznione),
+        odcien rozwiazywany przy renderowaniu. Narzedzie AI ustawia WYLACZNIE role —
+        modelowi latwiej trafic w role niz w hex, a reguly z roznych rozmow wygladaja
+        wtedy jak jeden system. Surowy kolor zostaje jako furtka administratora.
+        Kolor tla i czcionki zawsze w parze.
+
+  # Przyjete domyslne (kategoria "important" z analizy luk) — zadeklarowane, nie pytane
+  accepted_defaults:
+    - "Parytet platform: obie (Blazor i WinForms) — wariant A daje to za darmo, .AddConditionalAppearance() jest juz w obu Startupach"
+    - "Ukrycie pola (IsVisibleInListView=false) nie jest lapane przez straznik 'czy wlasciwosc sie rozwiazuje' — ostrzezenie w FieldTypeChangeGuard"
+    - "Zapis narzedzia przez INonSecuredObjectSpaceFactory omija bezpieczenstwo XAF — zaakceptowane spojnie z 19 istniejacymi narzedziami, ale nazwane wprost w specyfikacji"
+    - "Priority realnie trwale i realnie sortowane (nie zaslepka jak w repo siostrzanych); kolizje rozstrzyga kolejnosc, udokumentowane w prompcie systemowym"
+    - "Bramka potwierdzenia zostaje promptowa (konwencja calej warstwy narzedzi); odwracalnosc zapewnia ekran regul, nie popup"
+
+  research_reference:
+    path: null
+    research_question: null
+    research_type: null
+    confidence_level: null
+
+  design_reference:
+    source: mockup-studio-phase-4
+    product_design_path: null
+    mockup_count: 6
+    has_brief: false
+    index_path: analysis/design-context/INDEX.md
+    gallery_url: http://localhost:3847
+    format_used: html
+
+  reference_implementations:
+    - path: /Users/jacek/Projects/Brekhof/XafDataDrivenConditionalApp
+      note: >-
+        Wzorzec Brekhofa (EF Core, .NET 8, DX 25.2) — AppearanceRuleData,
+        AppearanceRulePropertiesAdapter, DataDrivenAppearanceController.
+        UWAGA z analizy w notatki/ConditionalAppearance-porownanie.md:
+        StartsWith na nazwie typu lapie typy-rodzenstwo, a statyczny event
+        RulesCommitted rozglasza sie po calym procesie — obu nie kopiowac 1:1.
+    - path: /Users/jacek/Projects/DX/DataDrive/CS/DataDrive.Module/Features/Appearance
+      note: Najdojrzalsza wersja — snapshot immutable, izolacja per tenant, ViewId, priorytet.
+    - path: /Users/jacek/Projects/DX/Fleetman/Fleetman.Module/Controllers/CustomApperanceViewControler.cs
+      note: Wersja XPO (encja CustomApperance sama implementuje IAppearanceRuleProperties) + akcja "Ustaw kolorowanie".
+
+  project_context:
+    repo: /Users/jacek/Projects/Brekhof/XafXPODynAssem
+    project_doc_paths:
+      - CLAUDE.md
+      - README.md
+      - PLAYBOOK-RAPORTY-AI.md
+      - docs/HOW_TO_IMPLEMENT.md
+      - deploy/README-wdrozenie.md
+      - deploy/bezprzerwy/README.md
+    index_md: null
+    deploy_target: Proxmox LXC 200 (192.168.88.25), Docker Compose, /opt/mordeczka
+    existing_ai_tooling:
+      - XafXPODynAssem.Module/Services/SchemaAIToolsProvider.cs
+      - XafXPODynAssem.Module/Services/AIChatService.cs
+      - XafXPODynAssem.Module/Services/AIChatClient.cs
+
+  # Ryzyka wniesione z przegladu przed faza 1 — do rozstrzygniecia na bramkach
+  pre_analysis_risks:
+    - id: deploy-brak-sciezki
+      severity: blocker
+      note: >-
+        Wdrozenie NOWEGO obrazu na uklad trzech replik nie ma napisanej procedury
+        (handoff 2026-08-31: "wymiana obrazu przy trzech replikach — zaprojektowana,
+        nienapisana"), a wdroz.sh celowo odmawia startu, gdy upstream opisuje wiecej
+        niz jedna replike. Decyzja uzytkownika na bramce fazy 2: (a) napisac wymiane
+        calej trojki blue/green na 8111-8113, (b) zgasic trojke i wdrozyc od nowa z
+        przerwa, (c) wdrozyc pojedyncza instancje testowa i odlozyc trojke.
+    - id: propagacja-regul
+      severity: high
+      note: >-
+        Reguly NIE moga wejsc do odcisku metadanych ReplicaSyncService — inaczej kazda
+        podyktowana regula restartuje wszystkie trzy repliki. Jednoczesnie statyczny
+        event RulesCommitted Brekhofa jest tu bezuzyteczny: trzy repliki to trzy procesy.
+        Kierunek: wlasny licznik wersji regul odpytywany w tej samej petli co odcisk,
+        przeladowujacy cache regul zamiast restartowac proces.
+    - id: typy-runtime
+      severity: high
+      note: >-
+        Typy sa kompilowane w locie przez Roslyn. Type.GetType na nich nie zadziala —
+        uzyc XafTypesInfo.FindTypeInfo(nazwa)?.Type. Przechowywac FullName, nie
+        AssemblyQualifiedName. NIE kopiowac dopasowania StartsWith (nazwy encji sa
+        polskimi rzeczownikami o wspolnych prefiksach: Faktura / FakturaPozycja).
+        Regula moze przezyc pole, ktore wskazuje — CollectAppearanceRules odpala sie
+        per element UI, wiec niezabezpieczony wyjatek kladzie caly widok.
+    - id: ugruntowanie-schematu-ai
+      severity: high
+      note: >-
+        Trudna czesc narzedzia AI to nie deklaracja funkcji, tylko odwzorowanie
+        "niezaplacone" na realne kryterium ([Zaplacona] = False? [DoZaplaty] > 0?).
+        Schemat jest definiowany przez uzytkownika i sie zmienia. Walidacja przed
+        zapisem: CriteriaOperator.Parse ORAZ sprawdzenie, ze kazda przywolana wlasciwosc
+        istnieje na rozwiazanym ITypeInfo; blad wraca do czatu, model poprawia.
+    - id: kolor-zalezny-od-skorki
+      severity: high
+      note: >-
+        Regula zapisujaca konkretny ARGB jest zwiazana z jedna skorka na zawsze —
+        jasne tlo pod ciemnym motywem daje bialy tekst na jasnym tle. Skorka bywa
+        ustawiana per uzytkownik, wiec jedna globalna regula nie trafi w obie.
+        Kierunek: encja trzyma ROLE koloru (Blad / Ostrzezenie / Sukces / Informacja /
+        Wyciszone / Wyroznione), odcien rozwiazywany przy renderowaniu z palety
+        dobranej do motywu. Surowy kolor zostaje jako opcjonalna furtka administratora,
+        ale narzedzie AI ustawia WYLACZNIE role — modelowi latwiej trafic w role niz
+        w hex, a reguly z roznych rozmow wygladaja wtedy jak jeden system.
+        Zasada dodatkowa: kolor tla i czcionki zawsze ustawiane w parze.
+        DO SPRAWDZENIA EMPIRYCZNIE (nie zakladac): (1) czy z kontrolera da sie odczytac
+        aktywny motyw DevExpress Blazor i czy jest per uzytkownik czy globalny;
+        (2) czy IAppearance.BackColor przenosi kanal alfa do CSS — jesli tak,
+        polprzezroczyste nakladki rozwiazuja problem bez wiedzy o skorce.
+    - id: gdzie-dokumentacja
+      severity: medium
+      note: >-
+        ".maister/tasks/" to stan robocza workflow, nie dokumentacja repo. Projekt trzyma
+        dokumentacje w docs/ i docs/plans/, a porownania miedzyprojektowe w
+        /Users/jacek/Projects/Brekhof/notatki/. Wynik ma wyladowac takze tam —
+        w szczegolnosci wiersz HIS i werdykt "wersji wspolnej" dopisany do
+        notatki/ConditionalAppearance-porownanie.md.
+
+  phase_summaries:
+    research: {summary: null, key_findings: [], recommended_approach: null}
+    design: {summary: null, screen_count: 0, component_count: 0, index_path: null}
+    codebase_analysis:
+      primary_language: C#
+      summary: >-
+        Zadnej reguly wygladu sterowanej danymi w repo nie ma (0 trafien na
+        AppearanceController / CollectAppearanceRules / IModelAppearanceRule /
+        IAppearanceRuleProperties) — sa cztery statyczne atrybuty [Appearance].
+        Silnik DevExpress jest juz podpiety w obu hostach, wiec dokladamy zrodlo
+        regul, nie silnik. Workflow.cs to gotowy wzorzec "dane zamiast atrybutow"
+        stojacy poza odciskiem metadanych. Fork A/B nierozstrzygniety.
+      key_files:
+        - XafXPODynAssem/XafXPODynAssem.Module/BusinessObjects/Workflow.cs
+        - XafXPODynAssem/XafXPODynAssem.Module/Services/SchemaAIToolsProvider.cs
+        - XafXPODynAssem/XafXPODynAssem.Module/Services/SchemaDiscoveryService.cs
+        - XafXPODynAssem/XafXPODynAssem.Module/AIChatDetailViewUpdater.cs
+        - XafXPODynAssem/XafXPODynAssem.Module/Module.cs
+        - XafXPODynAssem/XafXPODynAssem.Blazor.Server/Services/ReplicaSyncService.cs
+      decisions:
+        - decision: Encja regul poza QueryMetadata/GetMetadataFingerprint
+          rationale: Wzorem WorkflowDefinition — dane, nie schemat; inaczej kazda regula restartuje trzy repliki
+      risks:
+        - "Wariant A (CollectAppearanceRules) ma ZEROWY slad w tym repo — sprawdzony w Fleetman/DataDrive/HIS, nie tutaj"
+        - "Wariant B ma udowodniony mechanizm wstrzykiwania (AIChatDetailViewUpdater), ale IModelAppearanceRule nie wystepuje w repo ani razu, a model aplikacji moze byc cache'owany — nowa regula moglaby wymagac restartu"
+        - "Regula moze przezyc pole, ktore wskazuje (uzytkownik kasuje pole przez AI); w wariancie A wyjatek w CollectAppearanceRules wywraca caly widok"
+        - "Zapisy narzedzi AI ida przez INonSecuredObjectSpaceFactory — omijaja bezpieczenstwo XAF"
+        - "Brak projektu testowego w repo (jedyny plik z 'test' to test_runtime.py) — plan musi przewidziec reczny scenariusz weryfikacyjny"
+        - "AddStateMachine jest tylko w Blazor.Server/Startup.cs:70, brak w Win — wzorcowa funkcja Workflow jest w praktyce tylko-Blazorowa"
+      artifacts:
+        - {path: analysis/codebase-analysis.md, label: Analiza bazy kodu, html: null}
+      corrections_to_claude_md:
+        - "CLAUDE.md mowi SQL Server localdb — kod mowi PostgreSQL + Npgsql"
+        - "CLAUDE.md mowi DevExpress 25.2 — csproj mowi 26.1.4, target net8.0"
+        - "BLEDNE, SPROSTOWANE 2026-08-31: faza 1 twierdzila, ze zmienna XAF_UPDATE_DB nie istnieje.
+           ISTNIEJE — Blazor.Server/BlazorApplication.cs:37 czyta ja w obsludze DatabaseVersionMismatch
+           (`Debugger.IsAttached || GetEnvironmentVariable(\"XAF_UPDATE_DB\") == \"1\"`), a
+           deploy/bezprzerwy/trzy-repliki.sh:62 i deploy/docker-compose.bbs.yml:64 ustawiaja ja na 1.
+           deploy/bezprzerwy/README.md ma racje, sprzecznosci w dokumentacji nie ma."
+    clarifications: []
+    gap_analysis: {integration_points: [], summary: null, decisions: [], risks: [], artifacts: []}
+    scope_clarifications: {scope_expanded: null, summary: null}
+    ui_mockups: {components_designed: [], summary: null}
+    specification: {summary: null, decisions: [], risks: [], artifacts: []}
+    architecture_decision: {decision: null, summary: null}
+
+verification_context:
+  last_status: null
+  issues_found: []
+  fixes_applied: []
+  decisions_made: []
+  reverify_count: 0

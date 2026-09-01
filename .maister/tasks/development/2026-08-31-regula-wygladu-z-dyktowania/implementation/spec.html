@@ -1,0 +1,703 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Specyfikacja — Reguły wyglądu z dyktowania (mordeczka)</title>
+<style>
+:root {
+  --bg:#f6f7f9; --surface:#fff; --border:#e2e5ea; --text:#1a1d23; --dim:#6b7280;
+  --accent:#4f46e5; --accent-soft:#eef2ff; --ok:#16a34a; --ok-soft:#ecfdf3;
+  --warn:#d97706; --warn-soft:#fffbeb; --crit:#dc2626; --crit-soft:#fef2f2;
+  --info:#2563eb; --info-soft:#eff6ff; --radius:10px;
+}
+@media (prefers-color-scheme: dark) {
+  :root { --bg:#111418; --surface:#1a1f26; --border:#2e3640; --text:#e6e9ee; --dim:#9aa4b2;
+    --accent:#818cf8; --accent-soft:#26294a; --ok:#4ade80; --ok-soft:#11291a;
+    --warn:#fbbf24; --warn-soft:#2e2410; --crit:#f87171; --crit-soft:#321616;
+    --info:#60a5fa; --info-soft:#15233a; }
+}
+* { box-sizing:border-box; }
+body { margin:0 auto; max-width:1100px; padding:24px 20px 64px; background:var(--bg);
+  color:var(--text); font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; }
+a { color:var(--accent); text-decoration:none; } a:hover { text-decoration:underline; }
+h1 { font-size:22px; letter-spacing:-.01em; } h2 { font-size:16px; margin-top:28px; }
+.card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius);
+  padding:16px 18px; margin:14px 0; }
+.badge { display:inline-block; font-size:11px; font-weight:600; text-transform:uppercase;
+  letter-spacing:.04em; padding:2px 8px; border-radius:99px; background:var(--accent-soft); color:var(--accent); }
+.sev { display:inline-block; font-size:10.5px; font-weight:700; text-transform:uppercase;
+  padding:1.5px 7px; border-radius:99px; margin-right:6px; }
+.sev.critical { background:var(--crit-soft); color:var(--crit); }
+.sev.warning  { background:var(--warn-soft); color:var(--warn); }
+.sev.info     { background:var(--info-soft); color:var(--info); }
+.pass { color:var(--ok); font-weight:600; } .fail { color:var(--crit); font-weight:600; }
+table { width:100%; border-collapse:collapse; }
+th, td { text-align:left; padding:7px 10px; border-bottom:1px solid var(--border); vertical-align:top; }
+th { font-size:11.5px; text-transform:uppercase; letter-spacing:.04em; color:var(--dim); }
+code { font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:12.5px;
+  background:var(--accent-soft); padding:1px 5px; border-radius:4px; }
+img.shot { max-width:100%; border:1px solid var(--border); border-radius:var(--radius); }
+details > summary { cursor:pointer; font-weight:600; }
+.crumbs { display:flex; gap:14px; font-size:13px; margin-bottom:18px; flex-wrap:wrap; }
+.crumbs a.md { margin-left:auto; color:var(--dim); }
+.crumbs .here { font-weight:650; color:var(--text); }
+.tiles { display:flex; gap:10px; flex-wrap:wrap; margin:14px 0; }
+.tile { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius);
+  padding:10px 16px; text-align:center; min-width:90px; }
+.tile b { display:block; font-size:20px; letter-spacing:-.01em; }
+.tile span { font-size:10.5px; text-transform:uppercase; letter-spacing:.05em; color:var(--dim); }
+.tldr { border-left:3px solid var(--accent); }
+.grid2 { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+@media (max-width:760px) { .grid2 { grid-template-columns:1fr; } }
+.scroll { overflow-x:auto; }
+ul.tight { margin:6px 0 0; padding-left:20px; } ul.tight li { margin:4px 0; }
+.toc { font-size:13px; margin:10px 0 4px; color:var(--dim); }
+.k { border-left:3px solid var(--ok); }
+.r { border-left:3px solid var(--warn); }
+.story { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:12px 14px; }
+.stories { display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:12px; margin:12px 0; }
+.story b { display:block; font-size:11px; text-transform:uppercase; letter-spacing:.05em; color:var(--dim); margin-bottom:4px; }
+.no { color:var(--crit); } .yes { color:var(--ok); }
+.chip { display:inline-block; font-size:11.5px; background:var(--accent-soft); color:var(--accent);
+  border-radius:99px; padding:2px 9px; margin:2px 3px 2px 0; }
+</style>
+</head>
+<body>
+
+<nav class="crumbs">
+  <a href="../dashboard.html">← Pulpit</a>
+  <span class="here">Specyfikacja</span>
+  <a href="implementation-plan.html">Plan</a>
+  <a href="../verification/implementation-verification.html">Weryfikacja</a>
+  <a href="../analysis/design-context/INDEX.md" target="_blank" rel="noopener">Makiety ↗</a>
+  <a href="spec.md" target="_blank" rel="noopener" class="md">bliźniak md ↗</a>
+</nav>
+
+<header>
+  <span class="badge">Specyfikacja</span>
+  <h1>Reguły wyglądu z dyktowania — mordeczka</h1>
+  <p style="color:var(--dim);margin:0">
+    XAF Blazor Server + WinForms · XPO · PostgreSQL · DevExpress 26.1.4 · net8.0 ·
+    <code>/Users/jacek/Projects/Brekhof/XafXPODynAssem</code> · 2026-08-31
+  </p>
+</header>
+
+<div class="tiles">
+  <div class="tile"><b>21</b><span>wymagań</span></div>
+  <div class="tile"><b>31</b><span>wzorców do reużycia</span></div>
+  <div class="tile"><b>5</b><span>rzeczy pisanych od zera</span></div>
+  <div class="tile"><b>6</b><span>makiet wiążących</span></div>
+  <div class="tile"><b>29</b><span>kryteriów akceptacji</span></div>
+  <div class="tile"><b style="color:var(--crit)">Wysokie</b><span>ryzyko</span></div>
+</div>
+
+<section class="card tldr">
+  <h2 style="margin-top:0">TL;DR</h2>
+  <p>Dochodzi encja <code>AppearanceRule</code> (reguła wyglądu jako dane) i <code>ViewController</code>, który przy
+  każdej aktywacji widoku czyta reguły z bazy i wstrzykuje je do
+  <code>AppearanceController.CollectAppearanceRules</code> — <b>bez bufora w pamięci procesu</b>, więc trzy repliki
+  propagują zmiany za darmo.</p>
+  <p>Regułę tworzy asystent AI dwoma narzędziami (<code>sprawdz_regule_wygladu</code> /
+  <code>utworz_regule_wygladu</code>), a poprawia człowiek na własnym ekranie w grupie „Zarządzanie schematem".</p>
+  <p><b>Sednem jest jeden walidator w trzech miejscach</b>: odmawia zapisu bubla, pomija niesprawną regułę zamiast
+  wywalić widok i pokazuje na ekranie reguł, <i>że</i> jest zepsuta i <i>dlaczego</i>.</p>
+  <p>Kolor zapisujemy jako <b>rolę semantyczną</b>, nie ARGB — odcień rozwiązuje się przy renderowaniu.
+  Wdrożenie: zgaszenie trójki replik, nowy obraz, <code>--updateDatabase</code>, <code>trzy-repliki.sh</code>,
+  test osobno na 8101/8102/8103.</p>
+</section>
+
+<p class="toc">Zawartość:
+<a href="#decyzje">Kluczowe decyzje</a> ·
+<a href="#ryzyka">Ryzyka</a> ·
+<a href="#zakres">Zakres</a> ·
+<a href="#model">Model danych</a> ·
+<a href="#walidator">Walidator</a> ·
+<a href="#ai">Narzędzia AI</a> ·
+<a href="#prompt">Prompt</a> ·
+<a href="#kontroler">Kontroler</a> ·
+<a href="#ui">Wygląd</a> ·
+<a href="#cykl">Cykl życia</a> ·
+<a href="#uprawnienia">Uprawnienia</a> ·
+<a href="#reuzycie">Reużycie</a> ·
+<a href="#akceptacja">Kryteria akceptacji</a>
+</p>
+
+<h2 id="decyzje">Kluczowe decyzje</h2>
+<div class="card k">
+<table><thead><tr><th style="width:32%">Decyzja</th><th>Uzasadnienie</th></tr></thead><tbody>
+<tr><td><b>Wariant A, bez odwołania</b></td><td><code>ViewController</code> + <code>CollectAppearanceRules</code>, reguły pre-ładowane w <code>OnActivated</code>, sekwencja <code>ResetRulesCache()</code> → subskrypcja → <code>Refresh()</code>. Fork A/B jest rozstrzygnięty; obie analizy pisały „prototypować oba" <i>przed</i> tą decyzją.</td></tr>
+<tr><td><b>Zero bufora w pamięci procesu</b></td><td>Trzy repliki to trzy procesy. Każdy globalny cache (statyczny event Brekhofa, <code>CustomApperanceStorage</code> HIS-a, <code>ConcurrentDictionary</code> DataDrive'a) propaguje zmianę tylko w obrębie jednej repliki.</td></tr>
+<tr><td><b>Odczyt przez <code>INonSecuredObjectSpaceFactory</code></b></td><td>Zabezpieczona przestrzeń obiektów zwróciłaby użytkownikowi bez uprawnienia pustą listę i kolorowanie umarłoby po cichu tylko dla nie-adminów. Skutek uboczny: kolorowanie nie zależy od żadnego wpisu w <code>Updater.cs</code>.</td></tr>
+<tr><td><b>Encja implementuje interfejs bezpośrednio</b></td><td>Wzorzec Fleetmana w XPO — bez adaptera (idiom EF Core) i bez migawki (rozwiązuje problem cache'u, którego tu nie mamy).</td></tr>
+<tr><td><b>Kolor przez rolę semantyczną</b></td><td>ARGB tylko jako furtka administratora, zawsze para tło+czcionka. Narzędzie AI ustawia wyłącznie rolę.</td></tr>
+<tr><td><b>Stan i Diagnoza utrwalone</b></td><td>Przeliczane w <code>OnSaving()</code> — lista pokazuje zdrowie reguł bez przeliczania czegokolwiek, a walidator ma jedno wywołanie na każdej ścieżce zapisu.</td></tr>
+<tr><td><b>Graduacja migruje, nie zamraża</b></td><td>Przepisuje <code>TargetTypeName</code> i ostrzega, ale <b>nie</b> generuje atrybutów <code>[Appearance]</code> — tylko zakomentowaną sekcję <code>// --- Appearance Note ---</code>.</td></tr>
+</tbody></table>
+</div>
+
+<h2 id="ryzyka">Otwarte pytania i ryzyka</h2>
+<div class="card r">
+<table><thead><tr><th style="width:16%">Waga</th><th>Rzecz</th></tr></thead><tbody>
+<tr><td><span class="sev critical">critical</span></td><td><b><code>Updater.cs</code> na wdrożonej instancji jest martwy — zweryfikowane, nie hipoteza.</b> Paczka <code>/tmp/xpo-publish.tgz</code> ma <code>AssemblyConfigurationAttribute = "Release"</code>, a <code>Updater.UpdateDatabaseAfterUpdateSchema</code> ma <b>7 bajtów IL</b> (samo <code>base.…()</code> + <code>ret</code>). Cały blok <code>#if !RELEASE</code> jest wycięty; <code>CreateDefaultRole()</code> istnieje w assembly, ale nikt jej nie woła. Projekt celowo od niej nie zależy.</td></tr>
+<tr><td><span class="sev critical">critical</span></td><td><b>Zapis narzędzia AI omija bezpieczeństwo XAF.</b> <code>INonSecuredObjectSpaceFactory</code> ignoruje uprawnienia do typów i składowych — dowolny rozmówca czatu może utworzyć regułę na dowolnej encji. Świadome obejście zabezpieczeń, spójne z 19 istniejącymi narzędziami, nazwane wprost.</td></tr>
+<tr><td><span class="sev warning">warning</span></td><td><b>Do sprawdzenia empirycznie przed paletą:</b> czy z kontrolera da się odczytać aktywny motyw DevExpress Blazor i czy jest per użytkownik; czy <code>IAppearance.BackColor</code> przenosi kanał alfa do CSS (jeśli tak, półprzezroczyste nakładki upraszczają paletę do sześciu wartości).</td></tr>
+<tr><td><span class="sev warning">warning</span></td><td><b>Do sprawdzenia na prototypie:</b> kierunek rozstrzygania konfliktu w silniku. Kontrakt: wyższy <code>Priority</code> wygrywa. <code>CombineAppearanceResults</code> jest wewnętrzny; notatka porównawcza mówi to samo o DataDrive, ale to relacja, nie dowód.</td></tr>
+<tr><td><span class="sev warning">warning</span></td><td><b>Bramka potwierdzenia jest wyłącznie promptowa.</b> Nic technicznie nie broni modelowi wywołać <code>utworz_regule_wygladu</code> bez wcześniejszego sprawdzenia — dlatego narzędzie zapisujące waliduje samo, wewnętrznie.</td></tr>
+<tr><td><span class="sev warning">warning</span></td><td><b>Zero testów w repo.</b> Nie ma projektu testowego i to zadanie go nie zakłada — weryfikacja jest w całości ręczna.</td></tr>
+<tr><td><span class="sev info">info</span></td><td><b>Sprzeczność w <code>deploy/bezprzerwy/README.md</code> jest pozorna.</b> Faza 1 raportowała, że <code>XAF_UPDATE_DB</code> nie istnieje. Istnieje: <code>BlazorApplication.cs:37</code> czyta ją w obsłudze <code>DatabaseVersionMismatch</code>, a <code>trzy-repliki.sh:62</code> ustawia ją na <code>1</code>. README ma rację.</td></tr>
+<tr><td><span class="sev info">info</span></td><td>Dwie polskie nazwy narzędzi wśród 19 angielskich, w angielskim prompcie systemowym. Nazwy są ustalone; drobna niespójność konwencji.</td></tr>
+</tbody></table>
+</div>
+
+<h2 id="zakres">Zakres</h2>
+<div class="grid2">
+  <div class="card">
+    <h3 style="margin-top:0;font-size:14px">Wchodzi</h3>
+    <div class="scroll">
+    <table><thead><tr><th>#</th><th>Wymaganie</th><th>Priorytet</th></tr></thead><tbody>
+    <tr><td>W-01</td><td>Encja <code>AppearanceRule</code> + rejestracja w <code>Module.cs</code></td><td><span class="sev critical">krytyczny</span></td></tr>
+    <tr><td>W-02</td><td><code>AppearanceRuleViewController</code> wpinający reguły w silnik</td><td><span class="sev critical">krytyczny</span></td></tr>
+    <tr><td>W-03</td><td>Walidator — jeden, użyty w trzech miejscach</td><td><span class="sev critical">krytyczny</span></td></tr>
+    <tr><td>W-04</td><td>Utrwalone <code>Health</code>/<code>Diagnosis</code> („Stan"/„Diagnoza")</td><td><span class="sev critical">krytyczny</span></td></tr>
+    <tr><td>W-05</td><td><code>sprawdz_regule_wygladu</code> (tylko odczyt)</td><td><span class="sev critical">krytyczny</span></td></tr>
+    <tr><td>W-06</td><td><code>utworz_regule_wygladu</code> (waliduje i zapisuje)</td><td><span class="sev critical">krytyczny</span></td></tr>
+    <tr><td>W-07</td><td>Sekcja <code>## Appearance Rules</code> w prompcie systemowym</td><td><span class="sev critical">krytyczny</span></td></tr>
+    <tr><td>W-08</td><td>Własny ekran reguł w „Zarządzanie schematem", bez <code>.xafml</code></td><td><span class="sev critical">krytyczny</span></td></tr>
+    <tr><td>W-21</td><td>Wdrożenie wariantem (b) + test na 8101/8102/8103</td><td><span class="sev critical">krytyczny</span></td></tr>
+    <tr><td>W-09</td><td>Rola koloru (6 wartości) + paleta</td><td><span class="sev warning">wysoki</span></td></tr>
+    <tr><td>W-10</td><td>Akcje „Sprawdź reguły" / „Sprawdź tę regułę"</td><td><span class="sev warning">wysoki</span></td></tr>
+    <tr><td>W-11</td><td>Migracja <code>TargetTypeName</code> przy graduacji + ostrzeżenie</td><td><span class="sev warning">wysoki</span></td></tr>
+    <tr><td>W-20</td><td>Parytet Blazor + WinForms (bez dodatkowego kodu)</td><td><span class="sev warning">wysoki</span></td></tr>
+    <tr><td>W-12</td><td><code>// --- Appearance Note ---</code> w generowanym źródle</td><td><span class="sev info">średni</span></td></tr>
+    <tr><td>W-13</td><td>Ostrzeżenie w <code>FieldTypeChangeGuard</code> przy ukrywaniu pola</td><td><span class="sev info">średni</span></td></tr>
+    <tr><td>W-14</td><td>Przeliczenie reguł po <code>delete_entity</code></td><td><span class="sev info">średni</span></td></tr>
+    <tr><td>W-15…19</td><td>Podpowiedź w czacie, statyczny <code>[Appearance]</code>, nadpisanie kolorem, <code>ViewId</code>, „Klonuj"</td><td><span class="sev info">niski</span></td></tr>
+    </tbody></table>
+    </div>
+  </div>
+  <div class="card">
+    <h3 style="margin-top:0;font-size:14px">Jawnie nie wchodzi</h3>
+    <ul class="tight">
+      <li><b class="no">Kod dyktowania i rozpoznawania mowy.</b> „Podyktowane zdanie" to tekst w istniejącym czacie; dyktowanie robi system operacyjny.</li>
+      <li><b class="no">Dokładanie reguł do odcisku metadanych.</b> <code>QueryMetadata</code> zostaje przy <code>CustomClass</code> i <code>CustomField</code> — inaczej każde zdanie restartuje trzy repliki.</li>
+      <li><b class="no">Sterowanie <code>Enabled</code> (blokada edycji) z bazy.</b> Żadna z czterech aplikacji tego nie robi; zaślepka <code>null</code>.</li>
+      <li><b class="no"><code>AppearanceItemType</code> inny niż <code>"ViewItem"</code>.</b> Przyciski akcji i elementy układu — osobne zadanie.</li>
+      <li><b class="no">Obramowanie komórki (<code>BorderColor</code>).</b> Wymaga własnego evaluatora i <code>CustomizeElement</code>.</li>
+      <li><b class="no">Reguły generowane programowo</b> (<code>AppearanceModel</code> HIS-a).</li>
+      <li><b class="no">Utworzenie projektu testowego.</b> Weryfikacja jest ręczna.</li>
+      <li><b class="no">Wymiana blue/green na 8111–8113 bez przerwy</b> i przepisanie <code>wdroz.sh</code> na N replik.</li>
+      <li><b class="no">Obudowanie <code>INonSecuredObjectSpaceFactory</code>.</b> Dotyczyłoby wszystkich 19 narzędzi.</li>
+      <li><b class="no">Transfer paczki 223 MB na LXC 200.</b> Wykonuje użytkownik — krok jawnie zablokowany dla agenta.</li>
+    </ul>
+  </div>
+</div>
+
+<h2>Historyjki użytkownika</h2>
+<div class="stories">
+  <div class="story"><b>Administrator schematu</b>Chcę podyktować w czacie warunek kolorowania, żeby nie prosić programisty o atrybut <code>[Appearance]</code> i przebudowę obrazu.</div>
+  <div class="story"><b>Administrator schematu</b>Chcę, żeby asystent odmówił zapisu, gdy nazwę pole, którego nie ma — i powiedział, jakie pola są dostępne, zamiast pytać mnie o coś, co ma w schemacie.</div>
+  <div class="story"><b>Administrator schematu</b>Chcę listę wszystkich reguł ze stanem, żeby jednym rzutem oka zobaczyć, która nie działa i dlaczego.</div>
+  <div class="story"><b>Administrator schematu</b>Chcę wyłączyć regułę suwakiem zamiast ją kasować, żeby dało się wrócić.</div>
+  <div class="story"><b>Użytkownik aplikacji</b>Chcę widzieć to samo kolorowanie niezależnie od tego, na którą replikę trafię.</div>
+  <div class="story"><b>Administrator schematu</b>Chcę, żeby po graduacji encji reguły dalej działały, a jeśli czegoś nie da się naprawić automatycznie — żeby było to napisane wprost.</div>
+</div>
+
+<h2 id="model">Model danych</h2>
+<div class="card">
+<p><code>Module/BusinessObjects/AppearanceRule.cs</code>, baza <code>BaseObject</code> (XPO), wzorzec <code>Workflow.cs</code>.
+Identyfikatory C# angielskie, etykiety polskie przez <code>[XafDisplayName]</code> — konwencja repo.</p>
+<div class="scroll">
+<table><thead><tr><th>Właściwość</th><th>Typ</th><th>Etykieta</th><th>Uwaga</th></tr></thead><tbody>
+<tr><td><code>Name</code></td><td><code>string</code></td><td>Nazwa</td><td><code>[DefaultProperty]</code></td></tr>
+<tr><td><code>TargetTypeName</code></td><td><code>string</code></td><td>Encja docelowa</td><td><b><code>FullName</code>, nigdy <code>AssemblyQualifiedName</code></b> — assembly runtime jest generowane w pamięci</td></tr>
+<tr><td><code>Criteria</code></td><td><code>string</code> unlimited</td><td>Kryterium</td><td><code>[CriteriaOptions(nameof(TargetType))]</code> + <code>[EditorAlias(CriteriaPropertyEditor)]</code></td></tr>
+<tr><td><code>TargetItems</code></td><td><code>string</code> unlimited</td><td>Pola docelowe</td><td><code>[EditorAlias(CheckedListBoxEditor)]</code>, <code>;</code>-rozdzielone albo <code>*</code></td></tr>
+<tr><td><code>AppearanceContext</code></td><td>enum DevExpressa</td><td>Kontekst</td><td><b>Nie deklarujemy własnego enuma</b> — <code>ListView(0)</code>/<code>DetailView(1)</code>/<code>Any(2)</code>, zweryfikowane w assembly</td></tr>
+<tr><td><code>ViewId</code></td><td><code>string</code></td><td>Ogranicz do widoku</td><td>Pusty = dowolny widok; filtruje nasz kontroler, nie DevExpress</td></tr>
+<tr><td><code>ColorRole</code></td><td>enum</td><td>Rola koloru</td><td><code>None</code>/<code>Error</code>/<code>Warning</code>/<code>Success</code>/<code>Info</code>/<code>Muted</code>/<code>Highlight</code></td></tr>
+<tr><td><code>BackColorOverride</code><br><code>FontColorOverride</code></td><td><code>string</code>(16)</td><td>Kolor tła / czcionki (nadpisanie)</td><td>Tekst <code>#AARRGGBB</code>, nie <code>int</code> — kolumna czytelna z SQL-a i zapisywalna bez <code>System.Drawing</code></td></tr>
+<tr><td><code>RuleFontStyle</code></td><td><code>DXFontStyle?</code></td><td>Styl czcionki</td><td><code>DevExpress.Drawing.DXFontStyle</code>, <b>nie</b> <code>System.Drawing.FontStyle</code></td></tr>
+<tr><td><code>ItemVisibility</code></td><td><code>ViewItemVisibility?</code></td><td>Widoczność</td><td><code>Hide</code>/<code>ShowEmptySpace</code>/<code>Show</code></td></tr>
+<tr><td><code>Priority</code></td><td><code>int</code></td><td>Priorytet</td><td>Domyślnie 10; <b>realnie sortowane</b> — kopiujesz pole, kopiujesz <code>OrderBy</code></td></tr>
+<tr><td><code>IsEnabled</code></td><td><code>bool</code></td><td>Włączona</td><td>Wyłączenie zamiast kasowania</td></tr>
+<tr><td><code>Health</code></td><td>enum</td><td><b>Stan</b></td><td><code>Healthy</code>/<code>Warning</code>/<code>Broken</code> → Sprawna / Ostrzeżenie / Niesprawna</td></tr>
+<tr><td><code>Diagnosis</code></td><td><code>string</code> unlimited</td><td><b>Diagnoza</b></td><td>Polski tekst z walidatora; pusty gdy <code>Healthy</code></td></tr>
+<tr><td><code>CheckedOn</code></td><td><code>DateTime?</code></td><td>Sprawdzono</td><td>Znacznik ostatniego przeliczenia</td></tr>
+</tbody></table>
+</div>
+
+<details style="margin-top:12px">
+<summary>Pełna mapa <code>IAppearanceRuleProperties</code> — dwanaście członków, w tym cztery zaślepki</summary>
+<p>Zweryfikowane bezpośrednio w assembly 26.1.4. Interfejs ma <b>dwanaście członków i tylko tyle</b>:
+<code>IAppearanceRuleProperties : IAppearance</code>, sześć z bazowego i sześć własnych. Nie ma członka <code>Id</code>
+ani <code>ResultType</code>. Jedenaście ma <code>get; set;</code>, <code>DeclaringType</code> jest tylko do odczytu.
+<b>Wszystkie settery implementujemy jako puste</b> — silnik nigdy nie ma prawa zapisać czegokolwiek do rekordu.
+Dwa członki wymagają jawnej implementacji interfejsu, bo kolidują z nazwą właściwości trwałej.</p>
+<div class="scroll">
+<table><thead><tr><th>Członek</th><th>Typ</th><th>Skąd</th><th>Zaślepka?</th></tr></thead><tbody>
+<tr><td><code>IAppearance.Priority</code></td><td><code>int</code></td><td>pole <code>Priority</code></td><td class="yes">nie</td></tr>
+<tr><td><code>IAppearance.FontStyle</code></td><td><code>DXFontStyle?</code></td><td><code>RuleFontStyle</code> (jawna implementacja)</td><td class="yes">nie</td></tr>
+<tr><td><code>IAppearance.FontColor</code></td><td><code>Color?</code></td><td><code>AppearanceRolePalette</code></td><td class="yes">nie</td></tr>
+<tr><td><code>IAppearance.BackColor</code></td><td><code>Color?</code></td><td><code>AppearanceRolePalette</code> (jawna implementacja)</td><td class="yes">nie</td></tr>
+<tr><td><code>IAppearance.Visibility</code></td><td><code>ViewItemVisibility?</code></td><td>pole <code>ItemVisibility</code></td><td class="yes">nie</td></tr>
+<tr><td><code>IAppearance.Enabled</code></td><td><code>bool?</code></td><td>—</td><td class="no">tak, zawsze <code>null</code></td></tr>
+<tr><td><code>TargetItems</code></td><td><code>string</code></td><td>pole, <b>puste → <code>"*"</code></b></td><td>normalizacja</td></tr>
+<tr><td><code>Criteria</code></td><td><code>string</code></td><td>pole, <b>puste → <code>"True"</code></b></td><td>normalizacja</td></tr>
+<tr><td><code>Context</code></td><td><code>string</code></td><td><code>AppearanceContext.ToString()</code></td><td class="yes">nie</td></tr>
+<tr><td><code>AppearanceItemType</code></td><td><code>string</code></td><td><code>nameof(AppearanceItemType.ViewItem)</code></td><td class="no">tak, zawsze <code>"ViewItem"</code></td></tr>
+<tr><td><code>Method</code></td><td><code>string</code></td><td>—</td><td class="no">tak, zawsze <code>string.Empty</code> (nie <code>null</code>)</td></tr>
+<tr><td><code>DeclaringType</code></td><td><code>Type</code> (get)</td><td><code>ResolveTargetType()</code></td><td class="yes">nie</td></tr>
+</tbody></table>
+</div>
+<p>Dwie normalizacje nie są kosmetyką: puste <code>Criteria</code> i puste <code>TargetItems</code> przekazane silnikowi
+wprost dają nieprzewidywalne zachowanie. Fleetman i DataDrive normalizują oba; Brekhof nie, a jego <code>??</code>-fallback
+jest martwy, bo pole nigdy nie jest <code>null</code>, tylko puste.</p>
+</details>
+
+<details style="margin-top:8px">
+<summary>Paleta ról i parsowanie koloru — dwie pułapki do ominięcia</summary>
+<p>Kolejność rozstrzygania: <b>1.</b> nadpisanie administratora (oba kolory ustawione i sparsowane) →
+<b>2.</b> rola → <b>3.</b> nic (<code>null</code>, nigdy <code>Color.Empty</code>).
+<b>Przypadek połowiczny rozstrzygnięty jawnie:</b> nadpisanie z jednej strony jest ignorowane w całości i reguła
+spada na rolę; walidator wystawia <code>Warning</code>.</p>
+<p><span class="chip">Błąd</span><span class="chip">Ostrzeżenie</span><span class="chip">Sukces</span><span class="chip">Informacja</span><span class="chip">Wyciszone</span><span class="chip">Wyróżnione</span></p>
+<ol class="tight">
+<li><b><code>int.Parse(…, NumberStyles.HexNumber)</code> przepełnia się dla alfy ≥ <code>0x80</code>.</b> Konwerter Fleetmana
+robi dokładnie to i rzuca <code>OverflowException</code> na każdym nieprzezroczystym kolorze — bez <code>try/catch</code>.
+Używamy <code>uint.Parse</code> + <code>Color.FromArgb(unchecked((int)value))</code> w <code>try/catch</code>.</li>
+<li><b>Brak wartości musi wracać jako <code>null</code>, nie <code>Color.Empty</code>.</b> <code>Color.Empty.Name</code> to
+<code>"0"</code> i cicho przechodzi przez filtry — błąd obecny i we Fleetmanie, i w DataDrive.</li>
+</ol>
+</details>
+</div>
+
+<h2 id="walidator">Kontrakt walidatora — sedno funkcji</h2>
+<div class="card">
+<p><code>Module/Validation/AppearanceRuleValidator.cs</code> — statyczna, <b>bez <code>IObjectSpace</code>, bez zapytań do bazy</b>.
+To warunek konieczny tezy „jeden walidator w trzech miejscach": miejsce drugie to ścieżka aktywacji widoku, na której
+zapytanie do bazy jest zakazane.</p>
+<pre style="background:var(--accent-soft);padding:12px;border-radius:var(--radius);overflow-x:auto"><code>public enum AppearanceRuleHealth { Healthy = 0, Warning = 1, Broken = 2 }
+
+public readonly record struct AppearanceRuleCheck(AppearanceRuleHealth Health, string Diagnosis);
+
+public static AppearanceRuleCheck Check(
+    string targetTypeName, string criteria, string targetItems,
+    string backColorOverride, string fontColorOverride, ITypesInfo typesInfo);
+
+public static AppearanceRuleCheck Check(AppearanceRule rule, ITypesInfo typesInfo);</code></pre>
+<p><code>typesInfo</code> jest wstrzykiwany, nigdy pobierany w środku — kontroler podaje
+<code>ObjectSpace.TypesInfo</code> właściwe dla swojej repliki, narzędzie AI <code>XafTypesInfo.Instance</code>.</p>
+
+<div class="scroll">
+<table><thead><tr><th>#</th><th>Warunek</th><th>Stan</th><th>Komunikat</th></tr></thead><tbody>
+<tr><td>1</td><td><code>TargetTypeName</code> pusty</td><td><span class="sev critical">Broken</span></td><td>„Reguła nie wskazuje encji docelowej."</td></tr>
+<tr><td>2</td><td><code>FindTypeInfo</code> → <code>null</code></td><td><span class="sev critical">Broken</span></td><td>„Encja <b>{X}</b> nie istnieje. Została usunięta albo wygraduowana i zmieniła nazwę. Wskaż istniejącą encję."</td></tr>
+<tr><td>3</td><td>typ to klasa bazowa (<code>BaseObject</code>, <code>object</code>)</td><td><span class="sev critical">Broken</span></td><td>„Reguła celuje w klasę bazową <b>{X}</b>, więc pokolorowałaby każdy widok w aplikacji. Wskaż konkretną encję."</td></tr>
+<tr><td>4</td><td><code>Criteria</code> puste</td><td><span class="sev critical">Broken</span></td><td>„Reguła nie ma kryterium — nie wiadomo, które wiersze pokolorować."</td></tr>
+<tr><td>5</td><td><code>CriteriaOperator.Parse</code> rzuca</td><td><span class="sev critical">Broken</span></td><td>„Kryterium nie daje się odczytać: {komunikat parsera}"</td></tr>
+<tr><td>6</td><td>węzeł <code>OperandProperty</code> nie istnieje w <code>ITypeInfo.Members</code></td><td><span class="sev critical">Broken</span></td><td>„Kryterium odwołuje się do pola, którego nie ma. Encja <b>{typ}</b> nie ma właściwości <b>{pole}</b>." + „Czy chodziło o <b>{podpowiedź}</b>?"</td></tr>
+<tr><td>7</td><td>pole z <code>TargetItems</code> nie istnieje</td><td><span class="sev critical">Broken</span></td><td>„Pole docelowe <b>{pole}</b> nie istnieje na encji <b>{typ}</b>."</td></tr>
+<tr><td>8</td><td>pole istnieje, ale <code>IsVisibleInListView = false</code></td><td><span class="sev warning">Warning</span></td><td>„Pole <b>{pole}</b> zostało ukryte w interfejsie, więc reguła nie ma czego pokolorować. Reguła jest poprawna — tylko bezskuteczna."</td></tr>
+<tr><td>9</td><td>ustawione tylko jedno z pary kolorów</td><td><span class="sev warning">Warning</span></td><td>„Ustawiono tylko jeden z pary kolorów, więc nadpisanie zostało pominięte i obowiązuje rola. Ustaw oba albo żaden."</td></tr>
+<tr><td>10</td><td>reguła nie zmienia niczego</td><td><span class="sev warning">Warning</span></td><td>„Reguła nie zmienia niczego: nie ma roli koloru, nadpisania ani stylu."</td></tr>
+</tbody></table>
+</div>
+
+<p style="margin-top:14px"><b>Chodzenie po drzewie kryterium — precyzyjnie.</b> Sprawdzamy <b>wyłącznie węzły
+<code>OperandProperty</code></b>. Wywołania funkcji (<code>FunctionOperator</code>, np. <code>LocalDateTimeToday()</code>,
+<code>IsNullOrEmpty(...)</code>) i stałe pomijamy — inaczej <code>[TerminPlatnosci] &lt; LocalDateTimeToday()</code>
+z makiety zostałoby odrzucone jako „brak pola <code>LocalDateTimeToday</code>". Ścieżki kropkowane rozwijamy człon po
+członie przez <code>ITypeInfo.FindMember(...)</code>.</p>
+
+<h3 style="font-size:14px">Trzy miejsca użycia</h3>
+<table><thead><tr><th style="width:26%">Miejsce</th><th>Zachowanie</th></tr></thead><tbody>
+<tr><td><b>Narzędzie AI, przed zapisem</b></td><td><code>Broken</code> → <b>odmowa zapisu</b> i tekst błędu do modelu. <code>Warning</code> → zapis przechodzi, ostrzeżenie w odpowiedzi.</td></tr>
+<tr><td><b>Kontroler, przy aktywacji widoku</b></td><td><code>Broken</code> → reguła <b>pomijana</b>, wpis do logu. <code>Warning</code> → reguła stosowana. <b>Kontroler nigdy nie zapisuje <code>Health</code> z powrotem</b> — ocenia w pamięci i idzie dalej.</td></tr>
+<tr><td><b>Ekran reguł</b></td><td>Kolumna „Stan" na liście, panel diagnozy w szczegółach, wiersze niesprawne wyróżnione statycznym <code>[Appearance]</code>.</td></tr>
+</tbody></table>
+
+<p style="margin-top:12px;padding:10px 12px;background:var(--info-soft);border-radius:var(--radius)">
+<b><code>Health</code> w bazie to prawda o schemacie, nie o replice.</b> Reguła wskazująca encję, której dana replika
+jeszcze nie skompilowała, jest w bazie <code>Healthy</code>, a mimo to lokalnie nierozwiązywalna. Rozbieżność jest
+z założenia dopuszczalna: bramką jest własne sprawdzenie kontrolera przy każdej aktywacji widoku, a nie zapisany stan.</p>
+
+<p><b>Cztery wyzwalacze utrwalenia:</b> <code>OnSaving()</code> encji (jedno miejsce pokrywające wszystkie ścieżki zapisu),
+graduacja, usunięcie encji, akcja „Sprawdź reguły". <code>OnSaving()</code> ustawia tylko własne pola obiektu — to
+<b>nie jest</b> wzorzec DataDrive'a (zapis do zewnętrznego cache'u), który przy wycofanej transakcji zostawia
+regułę-widmo.</p>
+</div>
+
+<h2 id="ai">Kontrakt narzędzi AI</h2>
+<div class="card">
+<p>Dwie prywatne metody + dwa wpisy w <code>CreateTools()</code>. <code>SchemaAIToolsProvider</code> jest singletonem —
+<b>żadnej nowej rejestracji DI</b>. Parametry wyłącznie prymitywne, <code>[Description]</code> po angielsku, teksty
+odmów po polsku, całość w <code>try/catch</code> zwracającym tekst.</p>
+<div class="grid2">
+  <div>
+    <h3 style="font-size:14px"><code>sprawdz_regule_wygladu</code> <span class="badge">tylko odczyt</span></h3>
+    <table><tbody>
+    <tr><td><code>entityName</code></td><td>wymagany</td></tr>
+    <tr><td><code>criteria</code></td><td>wymagany</td></tr>
+    <tr><td><code>colorRole</code></td><td>opcjonalny — brak zgłaszany jako MISSING</td></tr>
+    <tr><td><code>targetItems</code></td><td><code>"*"</code></td></tr>
+    <tr><td><code>context</code></td><td><code>"ListView"</code></td></tr>
+    </tbody></table>
+  </div>
+  <div>
+    <h3 style="font-size:14px"><code>utworz_regule_wygladu</code> <span class="badge">zapisuje</span></h3>
+    <table><tbody>
+    <tr><td><code>entityName</code></td><td>wymagany</td></tr>
+    <tr><td><code>criteria</code></td><td>wymagany</td></tr>
+    <tr><td><code>colorRole</code></td><td><b>wymagany — nigdy nie zgadywany</b></td></tr>
+    <tr><td><code>ruleName</code></td><td>wymagany, w języku użytkownika</td></tr>
+    <tr><td><code>targetItems</code> / <code>context</code> / <code>priority</code></td><td><code>"*"</code> / <code>"ListView"</code> / <code>10</code></td></tr>
+    </tbody></table>
+  </div>
+</div>
+<p style="margin-top:12px;padding:10px 12px;background:var(--warn-soft);border-radius:var(--radius)">
+<b>Narzędzie nie przyjmuje <code>backColor</code>, <code>fontColor</code>, <code>viewId</code>, <code>fontStyle</code>
+ani <code>visibility</code>.</b> Kolor surowy i zawężenie do widoku to furtki administratora edytowane na ekranie reguł —
+model dostaje węższy kontrakt, żeby reguły z różnych rozmów wyglądały jak jeden system.</p>
+
+<details>
+<summary>Ścieżki odmowy (polski, do czatu, żadnego zapisu)</summary>
+<table><thead><tr><th style="width:30%">Sytuacja</th><th>Treść</th></tr></thead><tbody>
+<tr><td>encja nierozwiązana</td><td>„Nie znalazłem encji <b>{X}</b>. Dostępne encje: {lista}. Żadna reguła nie została zapisana."</td></tr>
+<tr><td>pole w kryterium nie istnieje</td><td>„Encja <b>{typ}</b> nie ma właściwości <b>{pole}</b>. Dostępne pola: {lista}. Żadna reguła nie została zapisana."</td></tr>
+<tr><td>kryterium nie parsuje</td><td>„Kryterium nie daje się odczytać: {komunikat}. Żadna reguła nie została zapisana."</td></tr>
+<tr><td>rola koloru pusta</td><td>„Nie podano roli koloru. Do wyboru: Błąd, Ostrzeżenie, Sukces, Informacja, Wyciszone, Wyróżnione. Żadna reguła nie została zapisana."</td></tr>
+<tr><td>pole docelowe nie istnieje</td><td>„Pole docelowe <b>{pole}</b> nie istnieje na encji <b>{typ}</b>. Żadna reguła nie została zapisana."</td></tr>
+<tr><td>encja niewdrożona</td><td>„Encja <b>{typ}</b> nie jest jeszcze wdrożona. Kliknij Deploy Schema, potem poproś o regułę ponownie. Żadna reguła nie została zapisana."</td></tr>
+</tbody></table>
+<p style="margin-top:10px"><b>Komunikat sukcesu</b> to markdown z tabelką (encja, kryterium, pola, rola, kontekst, priorytet)
+zakończony zdaniem: „Odśwież stronę (F5) i otwórz listę — <b>wdrożenie nie jest potrzebne</b>, reguła to dane, nie kod."</p>
+</details>
+</div>
+
+<h2 id="prompt">Sekcja promptu systemowego</h2>
+<div class="card">
+<p>Do wstawienia w <code>SchemaDiscoveryService.GenerateSystemPrompt</code>, <b>między</b>
+<code>## Workflows (State Machines)</code> a <code>## Supported Field Types</code>. Prompt jest odświeżany przed każdą
+turą, więc sekcja działa od razu po wdrożeniu kodu. <b>To jedyna istniejąca bramka na człowieka</b> — czysto tekstowa.</p>
+<details>
+<summary>Tekst dosłowny do wstawienia</summary>
+<pre style="background:var(--accent-soft);padding:12px;border-radius:var(--radius);overflow-x:auto;white-space:pre-wrap"><code>## Appearance Rules (colouring rows and fields)
+
+- An appearance rule paints records in a list or on a detail screen when a criteria expression matches. Reach for these tools when the user talks about kolor / kolorowanie / podświetl / na czerwono / wyróżnij / wyszarz / oznacz, or dictates something like "zrób faktury niezapłacone na czerwono na listach".
+- Tools: `sprawdz_regule_wygladu` (read-only check) and `utworz_regule_wygladu` (validates again, then saves).
+- **NEVER guess the parts the user did not say.** Before calling `utworz_regule_wygladu` you must know all three: (1) which entity, (2) the criteria expression, (3) the colour role. If any is missing, ask ONE specific question about it and wait for the answer.
+- Translate the user's words into a criteria expression yourself, but ONLY over properties that actually exist on the entity — call `describe_entity` or `sprawdz_regule_wygladu` to check. "Niezapłacone" may be `[Zaplacona] = False` on one entity and `[DoZaplaty] &gt; 0` on another; when both are plausible, say which one you picked and why, and let the user correct you.
+- If a tool answers PROBLEM because a property does not exist, do NOT ask the user which field to use — the answer lists the entity's real fields. Pick the closest one, propose it in one sentence, and wait for a yes.
+- Colour is a semantic ROLE, never a hex value. The six roles are: Error (needs action — overdue, unpaid, rejected), Warning (deadline approaching, data missing), Success (settled, closed well), Info (neutral emphasis), Muted (archived, cancelled, less important), Highlight ("look here", no judgement). Never invent a role — ask. Raw colours exist, but only an administrator sets them on the rules screen, and you must not offer to do it.
+- `targetItems` is `*` (the whole row) unless the user names specific fields. `context` is `ListView` unless the user is clearly talking about a record screen.
+- When two rules paint the same field, the one with the higher `priority` wins. Say so if the user creates a second rule over the same field.
+- Appearance rules are DATA, not schema: no Deploy, no restart, no rebuild. After creating one, tell the user to refresh the page (F5) and open the list. Also tell them the rule can be switched off or corrected under „Zarządzanie schematem → Reguły wyglądu" — that screen is how a mistake gets undone.
+- A rule survives on its own: if the entity it points at is deleted or renamed, the rule stops colouring and is shown as „Niesprawna" on the rules screen instead of breaking the view.</code></pre>
+</details>
+</div>
+
+<h2 id="kontroler">Zachowanie kontrolera</h2>
+<div class="card">
+<p><code>Module/Controllers/AppearanceRuleViewController.cs</code>, klasa <code>ObjectViewController&lt;ObjectView, object&gt;</code>.
+Kontrolery w <code>Module/Controllers/*.cs</code> są wykrywane automatycznie — <b>żadnej rejestracji w
+<code>Startup.cs</code> po żadnej ze stron</b>, dlatego parytet Blazor/WinForms wychodzi za darmo.</p>
+<pre style="background:var(--accent-soft);padding:12px;border-radius:var(--radius);overflow-x:auto"><code>OnActivated:
+ 1. base.OnActivated()
+ 2. Strażniki — każdy kończy metodę bez efektu:
+    – View is not ObjectView
+    – View.ObjectSpace is NonPersistentObjectSpace   // dopasowanie WZORCEM, nie GetType() != typeof(...)
+    – View.ObjectSpace.IsDisposed
+    – View.ObjectTypeInfo?.Type == null
+ 3. LoadRules()                       // CAŁOŚĆ w try/catch → pusta lista + log
+ 4. lista pusta → koniec, nic nie subskrybujemy
+ 5. appearanceController = Frame.GetController&lt;AppearanceController&gt;()   // null → log i koniec
+ 6. appearanceController.ResetRulesCache()
+ 7. appearanceController.CollectAppearanceRules += OnCollectAppearanceRules
+ 8. appearanceController.Refresh()</code></pre>
+<p><b>Kolejność kroków 6–8 jest nienegocjowalna.</b> Pominięcie <code>ResetRulesCache()</code> sprawia, że zdarzenie
+w ogóle się nie odpala: DevExpress zacache'ował „brak reguł dla tego typu" z pierwszej, bezregułowej aktywacji widoku.
+Tę samą kolejność mają wszystkie cztery aplikacje referencyjne.</p>
+
+<pre style="background:var(--accent-soft);padding:12px;border-radius:var(--radius);overflow-x:auto"><code>LoadRules()  — jedyne miejsce, w którym rozmawiamy z bazą
+ 1. Przestrzeń obiektów z INonSecuredObjectSpaceFactory, zwalniana w OnDeactivated
+ 2. Zapytanie: IsEnabled = True            -- JEDYNY filtr w bazie; NIGDY po Health
+ 3. W pamięci, dla każdej reguły:
+    a. type = rule.ResolveTargetType();  null → pomiń
+    b. !type.IsAssignableFrom(View.ObjectTypeInfo.Type) → pomiń
+    c. ViewId ustawiony i != View.Id → pomiń
+    d. Validator.Check(...).Health == Broken → pomiń + log
+ 4. OrderBy(Priority).ThenBy(Name).ThenBy(Oid)          -- deterministycznie
+ 5. Zapis do pola _rules</code></pre>
+
+<p style="margin-top:12px;padding:10px 12px;background:var(--crit-soft);border-radius:var(--radius)"><b><code>Health</code> i <code>Diagnosis</code> NIE MOGĄ być filtrem w zapytaniu.</b> To metadane do pokazania człowiekowi, nie bramka wykonawcza — jedyną bramką jest żywe sprawdzenie w kroku 3d. Gdyby zapytanie odsiewało po <code>Health &lt;&gt; Broken</code>, reguła oznaczona jako niesprawna w oknie graduacji <b>nigdy nie zostałaby ponownie oceniona</b> po wklejeniu źródła i przebudowie — kolorowanie nie wróciłoby samo, wbrew kryterium A-23. Ta sama zasada broni każdego przypadku, w którym typ staje się rozwiązywalny bez udziału człowieka: restart repliki, wdrożenie, cofnięcie graduacji.</p>
+<div class="grid2" style="margin-top:12px">
+<div style="padding:10px 12px;background:var(--info-soft);border-radius:var(--radius)">
+<b>Dlaczego niezabezpieczona przestrzeń obiektów.</b> Reguła wyglądu to konfiguracja interfejsu, nie dane użytkownika.
+Czytanie jej przez zabezpieczoną <code>View.ObjectSpace</code> oznaczałoby, że użytkownik bez uprawnienia dostaje pustą
+listę i kolorowanie umiera dla niego po cichu. Cena: odczyt konfiguracji UI omija uprawnienia — akceptowalna, bo nie
+wypływa z niej żadna dana biznesowa.
+</div>
+<div style="padding:10px 12px;background:var(--warn-soft);border-radius:var(--radius)">
+<b>Świadome odstępstwo od Fleetmana.</b> Fleetman ładuje reguły leniwie, <i>w środku handlera</i>. U nas zapytanie jest
+w <code>OnActivated</code> i <b>nigdy w handlerze</b> — <code>CollectAppearanceRules</code> odpala się raz na element
+interfejsu, więc zapytanie w środku byłoby katastrofą wydajnościową.
+</div>
+</div>
+
+<pre style="background:var(--accent-soft);padding:12px;border-radius:var(--radius);overflow-x:auto;margin-top:12px"><code>private void OnCollectAppearanceRules(object sender, CollectAppearanceRulesEventArgs e)
+{
+    try
+    {
+        if (_rules == null || _rules.Count == 0) return;
+        e.AppearanceRules.AddRange(_rules);        // List&lt;IAppearanceRuleProperties&gt;
+    }
+    catch (Exception ex) { _log(ex); }            // nigdy nie wypuszczamy wyjątku
+}</code></pre>
+<ul class="tight">
+<li><b>Żadnego zapytania do bazy w handlerze.</b> Odpala się raz na każdy element interfejsu.</li>
+<li><b><code>try/catch</code> obejmuje całe ciało.</b> Nieobsłużony wyjątek tutaj wywraca <b>cały widok</b>, nie jedną komórkę.</li>
+</ul>
+
+<p style="padding:10px 12px;background:var(--warn-soft);border-radius:var(--radius)"><b>Na widokach samych reguł działają dwa kontrolery naraz — i tak ma być.</b> <code>AppearanceRuleViewController</code> jest typu <code>ObjectViewController&lt;ObjectView, object&gt;</code>, więc aktywuje się także na liście i szczegółach <code>AppearanceRule</code>, obok kontrolera edytora. Po zapisie oba wykonają <code>ResetRulesCache()</code> + <code>Refresh()</code> na tej samej ramce — dokładnie to podwojenie, które notatka porównawcza wytyka Brekhofowi. Tu jest nieszkodliwe i <b>nie jest błędem do naprawienia</b> przez usunięcie którejś subskrypcji: zdejmując pierwszą, tracimy kolorowanie niesprawnych wierszy; zdejmując drugą — natychmiastowe odświeżenie po edycji.</p>
+<p><b>Odświeżanie po zapisie</b> robi drugi, mały kontroler na widokach samych reguł: na <code>ObjectSpace.Committed</code>
+(<b>nigdy <code>OnSaving</code></b>) resetuje cache <b>własnej ramki</b> i woła <code>Refresh()</code>.
+Żadnego rozgłaszania — statyczny event <code>RulesCommitted</code> Brekhofa jest tu podwójnie bezużyteczny: trzy repliki
+to trzy procesy, a w Blazor Server zapis jednej osoby odpalałby zapytanie u wszystkich pozostałych, poza dyspozytorami
+ich obwodów.</p>
+</div>
+
+<h2 id="ui">Wygląd i układ</h2>
+<div class="card">
+<p>Makiety w <code>analysis/design-context/</code> są <b>wiążącym wejściem</b>; planista dołączy
+<code>Visual References</code> do grup zadań interfejsowych. Wszystko budujemy standardowymi środkami XAF —
+<b>bez edycji <code>.xafml</code></b>. Projekt nie ma własnego systemu projektowego: cały język wizualny pochodzi
+z DevExpress Blazor 26.1.4. Grupa nawigacji: <b>„Zarządzanie schematem"</b>.</p>
+<div class="scroll">
+<table><thead><tr><th style="width:20%">Makieta</th><th>Co jest wiążące</th></tr></thead><tbody>
+<tr><td><a href="../analysis/design-context/mockups/lista-regu-wygl-du.html">lista reguł</a></td><td>Kolumny: Nazwa, Encja docelowa, Kryterium, Rola koloru (z próbką), Kontekst, Priorytet, Włączona, <b>Stan</b>. Wiersz filtra. Akcje: Nowa / Usuń / Odśwież / <b>Sprawdź reguły</b> / <b>Klonuj</b>. Wiersze niesprawne na czerwono, ostrzeżenia na żółto, wyłączone wyszarzone kursywą.</td></tr>
+<tr><td><a href="../analysis/design-context/mockups/regu-a-zak-adka-definicja.html">reguła — Definicja</a></td><td>Grupa „Co reguła obejmuje": Nazwa, Encja docelowa, Kryterium (edytor filtra z podpowiedziami tylko z wybranej encji), Pola docelowe (<b>checkboxy z <code>ITypeInfo</code></b>, <code>wszystkie (*)</code> pierwsze), Kontekst, Ogranicz do widoku, Priorytet, Włączona. Panel diagnozy z powodem, podpowiedzią naprawy i znacznikiem „Wykryto przy zapisie · {data}".</td></tr>
+<tr><td><a href="../analysis/design-context/mockups/regu-a-zak-adka-wygl-d.html">reguła — Wygląd</a></td><td>Grupa „Rola koloru" (lista + <b>podgląd</b> trzech wierszy w bieżącej skórce), „Pozostałe efekty" (Styl czcionki jako 4 checkboxy, Widoczność), na dole <b>„Nadpisanie kolorem — dla administratora, pomija rolę"</b> z notką „Asystent nie korzysta z tych pól".</td></tr>
+<tr><td><a href="../analysis/design-context/mockups/czat-utworzenie-regu-y-z-dyktowania.html">czat — utworzenie</a></td><td>Dyktowanie → wywołanie narzędzia widoczne w czacie → <b>jedno</b> dopytanie → podsumowanie tabelką „Tworzę?" → zapis → „wystarczy F5" + odnośniki do listy reguł i do faktur.</td></tr>
+<tr><td><a href="../analysis/design-context/mockups/czat-walidacja-odrzuca-bubla.html">czat — odmowa</a></td><td>Odmowa wraca z <b>listą dostępnych pól</b>; model sam proponuje najbliższe znaczeniowo. Osobno dopytuje o rolę koloru, wprost mówiąc, że nie zgaduje koloru.</td></tr>
+<tr><td><a href="../analysis/design-context/mockups/efekt-lista-faktur.html">efekt — faktury</a></td><td>Pokolorowane wiersze niezapłaconych na zwykłej liście, bez żadnego dodatkowego elementu interfejsu.</td></tr>
+</tbody></table>
+</div>
+<p style="margin-top:10px"><b>Komponenty:</b>
+<span class="chip">odznaka stanu</span><span class="chip">próbka roli</span><span class="chip">panel diagnozy</span><span class="chip">blok wywołania narzędzia</span></p>
+</div>
+
+<h2 id="cykl">Cykl życia</h2>
+<div class="card">
+<table><thead><tr><th style="width:22%">Zdarzenie</th><th>Prawdopodobieństwo</th><th>Zachowanie</th></tr></thead><tbody>
+<tr><td><b>Graduacja Runtime → Compiled</b></td><td><span class="sev critical">pewne</span></td><td><code>GraduationService</code> <b>nie emituje deklaracji <code>namespace</code></b>, więc <code>FullName</code> przechodzi z <code>XafXPODynAssem.RuntimeEntities.X</code> na <code>XafXPODynAssem.Module.BusinessObjects.X</code>. <b>Migrujemy <code>TargetTypeName</code></b>, ostrzegamy z liczbą ruszonych reguł, a w oknie przejściowym reguła ma <code>Broken</code> i jest bezpiecznie nieaktywna. Do generowanego źródła dochodzi sekcja <code>// --- Appearance Note ---</code> — <b>ale nie atrybuty <code>[Appearance]</code></b>.</td></tr>
+<tr><td><b>Usunięcie encji runtime</b></td><td><span class="sev warning">średnie</span></td><td><code>delete_entity</code> jest osiągalne z tego samego czatu. Po skasowaniu przeliczamy reguły i dopisujemy do odpowiedzi, ile osierociło. Reguł nie kasujemy. Zabezpieczenie działa nawet bez tego kroku: <code>ResolveTargetType()</code> → <code>null</code> → kontroler pomija.</td></tr>
+<tr><td><b>Ukrycie pola</b></td><td><span class="sev warning">średnie</span></td><td>W repo obowiązuje „pól nie usuwamy — ukrywamy je", więc <code>IsVisibleInListView = false</code> zostawia właściwość istniejącą i strażnik „czy właściwość się rozwiązuje" tego <b>nie złapie</b>. <code>FieldTypeChangeGuard</code> dostaje <code>FindRulesTargetingField(...)</code> i wystawia <b>ostrzeżenie, nie blokadę</b>; walidator niezależnie daje <code>Warning</code>.</td></tr>
+<tr><td><b>Typ jeszcze nieskompilowany na replice</b></td><td><span class="sev info">wysokie, objaw łagodny</span></td><td>Sytuacja normalna: <code>ReplicaSyncService</code> restartuje <code>green</code> po ~54 s i <code>blue</code> po ~104 s. W tym oknie <code>ResolveTargetType()</code> → <code>null</code> → reguła pomijana → widok działa bez kolorowania → po restarcie kolorowanie wraca samo. <b>Żadnego kodu specjalnego — pod warunkiem, że strażnik jest.</b> Bez niego dwie z trzech replik wywracają widoki na ~100 s.</td></tr>
+<tr><td><b>Zmiana nazwy pola lub encji</b></td><td><span class="sev info">pomijalne</span></td><td>Narzędzia zmiany nazwy nie ma; <code>FieldTypeChangeGuard</code> blokuje zmiany na polach wdrożonych. Nie planujemy obsługi.</td></tr>
+</tbody></table>
+</div>
+
+<h2 id="uprawnienia">Uprawnienia, <code>Updater.cs</code> i wdrożenie</h2>
+<div class="grid2">
+<div class="card">
+<h3 style="margin-top:0;font-size:14px">Żadna zmiana w <code>Updater.cs</code> nie jest wymagana</h3>
+<ol class="tight">
+<li><b>Kolorowanie nie przechodzi przez system bezpieczeństwa</b> — kontroler czyta reguły niezabezpieczoną przestrzenią obiektów, więc działa dla każdego zalogowanego.</li>
+<li><b>Ekran reguł jest dostępny dla administratora bez wpisu</b> — rola <code>Administrators</code> ma <code>IsAdministrative = true</code> i omija sprawdzanie uprawnień. Tak samo są dziś dostępne <code>CustomClass</code> i <code>WorkflowDefinition</code> z tej samej grupy.</li>
+<li><b>Blok w <code>Updater.cs</code> na wdrożonej instancji nie istnieje</b> — zweryfikowane w paczce: <code>"Release"</code> + <b>7 bajtów IL</b>. Empirycznie potwierdzono też, że SDK .NET definiuje symbol <code>RELEASE</code> przy <code>-c Release</code>, więc to reguła, nie przypadek jednej paczki.</li>
+</ol>
+<p>Gdyby mimo to rola <code>Default</code> miała dostać ekran, wpisy muszą stanąć <b>poza</b> <code>#if !RELEASE</code>
+i poza blokiem <code>if (role == null)</code>. Rejestracja typu to jedna linia:
+<code>AdditionalExportedTypes.Add(typeof(BusinessObjects.AppearanceRule));</code>.
+<b><code>QueryMetadata</code> / <code>GetMetadataFingerprint</code> zostają nietknięte.</b></p>
+</div>
+<div class="card">
+<h3 style="margin-top:0;font-size:14px">Wdrożenie — wariant (b), z jawną przerwą</h3>
+<table><tbody>
+<tr><td>1</td><td>Transfer paczki na LXC 200 — <b>wykonuje użytkownik</b> (223 MB, krok zablokowany dla agenta)</td></tr>
+<tr><td>2</td><td><code>docker compose down</code> / zatrzymanie trzech kontenerów</td></tr>
+<tr><td>3</td><td>Nowy obraz — <b>jeden dla wszystkich trzech replik</b></td></tr>
+<tr><td>4</td><td><code>--updateDatabase --forceUpdate --silent</code> dla nowej tabeli, przed startem replik</td></tr>
+<tr><td>5</td><td><code>trzy-repliki.sh &lt;obraz&gt;</code> — starty po kolei, wspólny wolumen kluczy</td></tr>
+<tr><td>6</td><td>Test kolorowania <b>osobno na 8101, 8102 i 8103</b></td></tr>
+</tbody></table>
+<p style="margin-top:8px">Wariant (b) ma zaletę, o której nie było mowy przy decyzji: znika pytanie „czy dwie wersje piszą
+jednocześnie do jednego schematu", bo w żadnym momencie nie chodzą równolegle.</p>
+</div>
+</div>
+
+<h2 id="reuzycie">Analiza możliwości ponownego użycia</h2>
+<div class="card">
+<p>Punktem wyjścia jest werdykt „wersji wspólnej" z <code>notatki/ConditionalAppearance-porownanie.md</code>:
+<b>żadna z czterech implementacji nie jest wzorcem do skopiowania w całości.</b></p>
+
+<h3 style="font-size:14px">Z tego repo — 12 wzorców</h3>
+<div class="scroll">
+<table><thead><tr><th style="width:34%">Skąd</th><th>Co</th></tr></thead><tbody>
+<tr><td><code>BusinessObjects/Workflow.cs</code></td><td>„Dane zamiast atrybutów": <code>TargetTypeName</code> jako string, <code>ResolveTargetType()</code> bez cache'owania (:129), strażnik aktywności (~:140), <code>[DefaultClassOptions]</code> + <code>[NavigationItem]</code> (:27-28), polskie etykiety</td></tr>
+<tr><td><code>BusinessObjects/CustomClass.cs:23-32</code></td><td>Statyczne <code>[Appearance]</code> do wyróżnienia wierszy — kształt dla niesprawnych reguł</td></tr>
+<tr><td><code>SchemaAIToolsProvider</code> (:1156, :1207)</td><td>Para <code>ValidateReportSpec</code>/<code>BuildReport</code>: <code>[Description]</code> na metodzie i parametrach, konwencja <code>PROBLEM:</code>/<code>MISSING:</code>, walidacja powtórzona w narzędziu zapisującym</td></tr>
+<tr><td><code>CreateObjectSpaceForType</code> (:87-123)</td><td><code>ScopedObjectSpace</code> + <code>INonSecuredObjectSpaceFactory</code> + <code>CommitChanges()</code></td></tr>
+<tr><td><code>WorkflowCommitController</code></td><td>Subskrypcja zdarzenia kontrolera DevExpressa w <code>OnActivated</code></td></tr>
+<tr><td><code>CustomFieldDeleteGuardController</code></td><td>Kształt kontrolera-strażnika i sprzątanie w <code>OnDeactivated</code></td></tr>
+<tr><td><code>SchemaDiscoveryService</code></td><td>Konwencja sekcji <code>## Workflows</code> / <code>## Reports</code> w prompcie</td></tr>
+<tr><td><code>GraduationWarningController</code></td><td><code>ShowMessage(..., InformationType.Warning)</code></td></tr>
+<tr><td><code>GraduationService.GenerateSource</code> (:24-57)</td><td>Konwencja <code>// --- XPO Note ---</code> / <code>// --- Web API Note ---</code></td></tr>
+<tr><td><code>FieldTypeChangeGuard.cs:179</code></td><td>Miejsce na <code>FindRulesTargetingField</code></td></tr>
+<tr><td><code>AIChatDefaults.PromptSuggestions</code></td><td><code>PromptSuggestionItem(Title, Text, Prompt)</code></td></tr>
+<tr><td><code>Module.cs:107</code>, oba <code>Startup.cs</code></td><td><b>Silnik jest już podpięty w obu hostach</b> — dokładamy źródło reguł, nie silnik</td></tr>
+</tbody></table>
+</div>
+
+<h3 style="font-size:14px;margin-top:20px">Z aplikacji referencyjnych — 19 elementów</h3>
+<div class="scroll">
+<table><thead><tr><th style="width:34%">Element</th><th style="width:14%">Skąd</th><th>Dlaczego stamtąd</th></tr></thead><tbody>
+<tr><td>Encja implementująca interfejs <b>bez adaptera</b></td><td><b>Fleetman</b></td><td>Jedyna wersja XPO. Adapter Brekhofa to idiom EF Core — o klasę mniej</td></tr>
+<tr><td>Odczyt z bazy przy aktywacji widoku, bez globalnego cache</td><td><b>Fleetman</b></td><td>Jedyna z czterech, która propaguje się między replikami sama, za darmo</td></tr>
+<tr><td>Ochrona przed <code>NonPersistentObjectSpace</code></td><td><b>Fleetman</b></td><td>Jedyna wersja, która ją ma</td></tr>
+<tr><td><code>Priority</code> + flaga włączenia, <b>oba realnie użyte</b></td><td><b>Fleetman</b> (po <code>b4cce974</code>)</td><td>Jedyna, w której oba pola są prawdziwe i faktycznie sortowane/filtrowane</td></tr>
+<tr><td>Picker typu i edytor kryterium</td><td><b>Fleetman</b>/<b>Brekhof</b></td><td><code>[TypeConverter(LocalizedClassInfoTypeConverter)]</code> + <code>[ImmediatePostData]</code>, <code>[CriteriaOptions]</code> + <code>[EditorAlias]</code></td></tr>
+<tr><td>Czyszczenie kryterium przy zmianie typu docelowego</td><td><b>Brekhof</b></td><td>Kryterium napisane dla poprzedniej encji jest po zmianie zawsze bublem</td></tr>
+<tr><td><code>ICheckedListBoxItemsProvider</code> + <code>CheckedListBoxEditor</code></td><td><b>Fleetman</b> i <b>DataDrive</b></td><td>Konkretny mechanizm za wymaganiem „checkboxy, nie wolny tekst"</td></tr>
+<tr><td>Normalizacja pustych wartości (<code>"True"</code> / <code>"*"</code>)</td><td><b>DataDrive</b></td><td>Brekhof ma tu martwy <code>??</code>-fallback — pole nigdy nie jest <code>null</code>, tylko puste</td></tr>
+<tr><td>Jawna implementacja interfejsu dla kolidujących nazw</td><td><b>Fleetman</b></td><td>Jedyny sposób, żeby właściwość trwała i członek interfejsu nazywały się tak samo</td></tr>
+<tr><td>Puste settery na wszystkich członkach interfejsu</td><td><b>Fleetman</b>/<b>DataDrive</b></td><td>Silnik nie ma prawa zapisać niczego do rekordu w bazie</td></tr>
+<tr><td><code>XafTypesInfo.FindTypeInfo(FullName)?.Type</code></td><td><b>DataDrive</b></td><td>Jedyne, które zadziała dla typów kompilowanych Roslynem w locie</td></tr>
+<tr><td>Zawężenie do widoku (<code>ViewId</code>)</td><td><b>DataDrive</b>/<b>HIS</b></td><td>Ta sama reguła na liście i w szczegółach to rzadko to samo, czego się chce</td></tr>
+<tr><td><code>OrderBy(Priority)</code> na ścieżce odczytu</td><td><b>DataDrive</b>/<b>Fleetman</b></td><td>Kopiujesz <code>Priority</code> — kopiujesz <code>OrderBy</code></td></tr>
+<tr><td>Kolor jako <b>tekst</b>, nie <code>int</code></td><td><b>HIS</b>/<b>DataDrive</b></td><td>Kolumna czytelna z SQL-a i zapisywalna bez <code>System.Drawing</code> — istotne, gdy regułę tworzy AI</td></tr>
+<tr><td>Wybór pól checkboxami z <code>ITypeInfo</code></td><td><b>HIS</b></td><td><code>*</code> zawsze pierwsze</td></tr>
+<tr><td>Akcja „Klonuj"</td><td><b>HIS</b>/<b>DataDrive</b></td><td>Kilka linii, duży zysk przy serii podobnych reguł</td></tr>
+<tr><td>Ręczna akcja przeliczenia („Sprawdź reguły")</td><td><b>HIS</b></td><td>Tani wzorzec operacyjny: przycisk zamiast restartu</td></tr>
+<tr><td>Interfejs jako <b>ogólny kontrakt wejściowy</b></td><td><b>HIS</b> (<code>AppearanceModel</code>)</td><td>Uzasadnia, że encja może być jednocześnie rekordem i nośnikiem dla silnika</td></tr>
+<tr><td>Inwalidacja przez <code>ObjectSpace.Committed</code></td><td><b>żadna z czterech</b></td><td>DataDrive pisze w <code>OnSaving</code>, Brekhof rozgłasza statycznym eventem</td></tr>
+</tbody></table>
+</div>
+
+<h3 style="font-size:14px;margin-top:20px">Czego świadomie NIE kopiujemy — 12 anty-wzorców</h3>
+<div class="scroll">
+<table><thead><tr><th style="width:34%">Anty-wzorzec</th><th style="width:14%">Skąd</th><th>Dlaczego</th></tr></thead><tbody>
+<tr><td><code>StartsWith</code> do dopasowania typu</td><td>Brekhof</td><td>Łapie typy-rodzeństwo. Polskie encje runtime dzielą prefiksy: reguła dla <code>Faktura</code> złapałaby <code>FakturaPozycja</code></td></tr>
+<tr><td>Dopasowanie po nazwie klasy bez przestrzeni nazw</td><td>HIS</td><td>Kolizja nazw myli filtr, a typy pochodne nie łapią się wcale</td></tr>
+<tr><td>Zaszyty wyjątek na jedną klasę</td><td>Fleetman (<code>Faktura</code>)</td><td>Nie skaluje się; zastępujemy <code>IsAssignableFrom</code></td></tr>
+<tr><td>Statyczny event <code>RulesCommitted</code></td><td>Brekhof</td><td>Trzy repliki to trzy procesy — event nigdy tam nie dotrze; w Blazor Server rozgłasza się po wszystkich obwodach</td></tr>
+<tr><td>Zapis do cache w <code>OnSaving</code></td><td>DataDrive</td><td>Wycofana transakcja zostawia regułę-widmo, aktywną do restartu</td></tr>
+<tr><td><code>Priority</code> obecne, ale nieużywane w sortowaniu</td><td>HIS</td><td>Najgorszy rodzaj pułapki — kopiujący przenosi pole, które wygląda na działające</td></tr>
+<tr><td>Budowanie evaluatora w pętli renderowania</td><td>DataDrive</td><td>Kryterium parsuje raz silnik; my nie ewaluujemy niczego per wiersz</td></tr>
+<tr><td><code>Color.Empty</code> zamiast <code>null</code></td><td>DataDrive <b>i</b> Fleetman</td><td><code>Color.Empty.Name</code> to <code>"0"</code> i cicho przechodzi przez filtry</td></tr>
+<tr><td><code>int.Parse</code> na ośmiu cyfrach ARGB</td><td>Fleetman i DataDrive</td><td>Przepełnia <code>int</code> dla każdej alfy ≥ <code>0x80</code> i rzuca z gettera właściwości</td></tr>
+<tr><td>Leniwe ładowanie reguł wewnątrz handlera</td><td>Fleetman</td><td>Handler odpala się raz na element interfejsu</td></tr>
+<tr><td><code>catch (Exception) { return new List&lt;&gt;(); }</code> wokół całego ładowania</td><td>Brekhof</td><td>Jedna zła reguła wyłącza <b>wszystkie</b> reguły dla widoku</td></tr>
+<tr><td>Kopiowanie <b>kodu</b> z repo Brekhofa</td><td>Brekhof</td><td><b>Repo nie ma pliku licencji — formalnie nie wolno przenosić z niego kodu.</b> Bierzemy stamtąd wyłącznie wnioski</td></tr>
+</tbody></table>
+</div>
+
+<h3 style="font-size:14px;margin-top:20px">Co piszemy sami, bo nikt tego nie ma — 5 rzeczy</h3>
+<ul class="tight">
+<li><b>Walidator z diagnozą utrwaloną na encji.</b> We wszystkich czterech aplikacjach niesprawna reguła przestaje działać w ciszy; żadna nie waliduje kryterium przy zapisie.</li>
+<li><b>Obsługa reguły wskazującej nieistniejącą właściwość.</b> <code>grep</code> za <code>FindMember</code> w kodzie wyglądu Brekhofa i DataDrive daje <b>zero trafień</b> — obie pilnują tylko momentu tworzenia reguły w interfejsie.</li>
+<li><b>Chodzenie po drzewie kryterium po węzłach <code>OperandProperty</code></b>, z pominięciem <code>FunctionOperator</code>.</li>
+<li><b>Rola koloru zamiast ARGB</b> wraz z paletą rozwiązywaną przy renderowaniu.</li>
+<li><b>Narzędzia AI tworzące reguły</b> i <b>migracja <code>TargetTypeName</code> przy graduacji</b> — problem specyficzny dla mordeczki.</li>
+</ul>
+</div>
+
+<h2 id="akceptacja">Kryteria akceptacji</h2>
+<div class="card">
+<h3 style="margin-top:0;font-size:14px">Propagacja na trzy repliki — kryterium rozstrzygające</h3>
+<table><thead><tr><th style="width:8%">#</th><th style="width:40%">Kryterium</th><th>Jak sprawdzić</th></tr></thead><tbody>
+<tr><td>A-01</td><td>Reguła utworzona na jednej replice koloruje na wszystkich trzech, <b>bez restartu</b></td><td>Utwórz na 8101, F5, otwórz listę faktur kolejno na <b>8101, 8102 i 8103</b> — identycznie na każdym porcie</td></tr>
+<tr><td>A-02</td><td>Reguła wstawiona <b>wprost do PostgreSQL</b> koloruje na replice, która nie obsłużyła zapisu</td><td><code>INSERT</code> → świeża sesja na 8102 → koloruje. <b>Test, którego nie da się oszukać</b></td></tr>
+<tr><td>A-03</td><td>Utworzenie reguły <b>nie restartuje</b> żadnej repliki</td><td><code>docker ps --filter 'label=aplikacja=mordeczka'</code> przed i po — uptime bez zmian</td></tr>
+</tbody></table>
+
+<details style="margin-top:14px">
+<summary>Ścieżka AI (A-04…A-08)</summary>
+<table><tbody>
+<tr><td>A-04</td><td>„zrób faktury niezapłacone na czerwono na listach" prowadzi do reguły nad istniejącym polem; asystent dopytuje o zakres i o rolę</td></tr>
+<tr><td>A-05</td><td>Nazwa nieistniejącego pola <b>nie tworzy reguły</b> i wraca z listą dostępnych pól; zero rekordów w tabeli</td></tr>
+<tr><td>A-06</td><td>Asystent <b>nie zgaduje roli koloru</b> — jedno pytanie z sześcioma opcjami, bez zapisu</td></tr>
+<tr><td>A-07</td><td><code>[TerminPlatnosci] &lt; LocalDateTimeToday()</code> zapisuje się bez błędu — walidator nie traktuje funkcji jak właściwości</td></tr>
+<tr><td>A-08</td><td>Odpowiedź kończy się „wdrożenie nie jest potrzebne", nie instrukcją deployu</td></tr>
+</tbody></table>
+</details>
+
+<details style="margin-top:8px">
+<summary>Odporność (A-09…A-13)</summary>
+<table><tbody>
+<tr><td>A-09</td><td>Reguła wskazująca skasowaną encję <b>nie wywraca żadnego widoku</b>; na swojej liście jako „Niesprawna" z diagnozą</td></tr>
+<tr><td>A-10</td><td>Reguła z kryterium nad nieistniejącym polem, wstawiona <b>wprost do bazy</b>, jest pomijana, a widok działa</td></tr>
+<tr><td>A-11</td><td>Reguła na typie, którego replika jeszcze nie skompilowała, nie wywraca widoków</td></tr>
+<tr><td>A-12</td><td><code>try/catch</code> obejmuje całe ciało handlera (przegląd kodu)</td></tr>
+<tr><td>A-13</td><td>Reguła celująca w klasę bazową jest odrzucana z diagnozą</td></tr>
+</tbody></table>
+</details>
+
+<details style="margin-top:8px">
+<summary>Interfejs (A-14…A-21)</summary>
+<table><tbody>
+<tr><td>A-14</td><td>„Reguły wyglądu" w grupie „Zarządzanie schematem" bez edycji <code>.xafml</code> (<code>git status</code>)</td></tr>
+<tr><td>A-15</td><td>Kolumna „Stan" na liście, wiersze niesprawne wyróżnione</td></tr>
+<tr><td>A-16</td><td>Panel diagnozy pokazuje powód i podpowiedź („Czy chodziło o …?")</td></tr>
+<tr><td>A-17</td><td>Zakładka „Wygląd": rola z próbką, nadpisanie kolorem na dole, opisane jako awaryjne</td></tr>
+<tr><td>A-18</td><td>Pola docelowe wybiera się checkboxami z <code>ITypeInfo</code>, nie wolnym tekstem</td></tr>
+<tr><td>A-19</td><td>Wyłączenie reguły natychmiast zdejmuje kolorowanie po F5, na wszystkich trzech replikach</td></tr>
+<tr><td>A-20</td><td>„Sprawdź reguły" przelicza stany całej listy i ustawia „Sprawdzono"</td></tr>
+<tr><td>A-21</td><td>Reguły działają w kliencie WinForms — kolorowanie identyczne</td></tr>
+</tbody></table>
+</details>
+
+<details style="margin-top:8px">
+<summary>Priorytet, graduacja i higiena wdrożeniowa (A-22…A-28)</summary>
+<table><tbody>
+<tr><td>A-22</td><td>Reguły <code>Priority</code> 10 (zielona) i 20 (czerwona) na tym samym warunku → wiersz czerwony, powtarzalnie</td></tr>
+<tr><td>A-23</td><td>Graduacja migruje <code>TargetTypeName</code> i podaje liczbę ruszonych reguł</td></tr>
+<tr><td>A-24</td><td>Wygenerowane źródło zawiera sekcję <code>// --- Appearance Note ---</code></td></tr>
+<tr><td>A-25</td><td>Ukrycie pola daje ostrzeżenie, nie blokadę; reguła dostaje <code>Warning</code>, nie <code>Broken</code></td></tr>
+<tr><td>A-26</td><td>Odcisk metadanych nietknięty (<code>git diff</code> na <code>Module.cs</code>)</td></tr>
+<tr><td>A-27</td><td>Tabela powstaje krokiem <code>--updateDatabase</code>, przed startem replik</td></tr>
+<tr><td>A-28</td><td>Kolorowanie działa dla użytkownika <b>bez</b> uprawnień do <code>AppearanceRule</code> — to jest ta połowa, którą projekt gwarantuje</td></tr>
+<tr><td>A-29</td><td><i>(obserwacja, nie gwarancja)</i> Pozycja „Reguły wyglądu" niewidoczna dla nie-administratora. Zależy od polityki roli: <code>Startup.cs</code> używa <code>UseIntegratedMode</code> i <b>nie ustawia jawnie żadnej polityki uprawnień</b>. Odnotować wynik, nie traktować jako warunku odbioru</td></tr>
+</tbody></table>
+</details>
+</div>
+
+<h2>Wskazówki wdrożeniowe</h2>
+<div class="card">
+<p><b>W repo nie ma projektu testowego</b> i to zadanie go nie tworzy — weryfikacja jest ręczna. Gdyby plan wydzielił
+grupy zadań, obowiązuje <b>2–8 skupionych testów na grupę</b>, a weryfikacja uruchamia wyłącznie testy nowe, nie cały zestaw.</p>
+<table><thead><tr><th style="width:24%">Grupa</th><th>Zakres</th><th style="width:26%">Sprawdzenia</th></tr></thead><tbody>
+<tr><td>G1 — encja i rejestracja</td><td><code>AppearanceRule</code>, enumy, <code>Module.cs</code>, tabela</td><td>A-14, A-26, A-27</td></tr>
+<tr><td>G2 — walidator</td><td>Wszystkie 10 reguł</td><td>A-07, A-13, A-25</td></tr>
+<tr><td>G3 — kontroler</td><td>Kontroler, paleta</td><td>A-01…A-03, A-09…A-12, A-21, A-22, A-28</td></tr>
+<tr><td>G4 — narzędzia AI i prompt</td><td>Dwa narzędzia, sekcja promptu, podpowiedź</td><td>A-04…A-08</td></tr>
+<tr><td>G5 — ekran reguł</td><td>Lista, szczegóły, akcje, statyczny <code>[Appearance]</code></td><td>A-15…A-20</td></tr>
+<tr><td>G6 — cykl życia</td><td>Graduacja, <code>delete_entity</code>, <code>FieldTypeChangeGuard</code></td><td>A-23, A-24, A-25</td></tr>
+<tr><td>G7 — wdrożenie</td><td>Wariant (b), test na 8101/8102/8103</td><td>A-01, A-02, A-03</td></tr>
+</tbody></table>
+
+<details style="margin-top:12px">
+<summary>Zgodność ze standardami i korekty do <code>CLAUDE.md</code></summary>
+<p><code>.maister/docs/INDEX.md</code> w tym repozytorium <b>nie istnieje</b> — nie ma plików standardów. Obowiązują
+konwencje odczytane z kodu: identyfikatory C# angielskie i etykiety polskie przez <code>[XafDisplayName]</code> (brak
+<code>.resx</code>); <code>[Description]</code> narzędzi po angielsku, odmowy po polsku; XPO z <code>SetPropertyValue</code>;
+kontrolery w <code>Module/Controllers/*.cs</code> wykrywane automatycznie; parametry narzędzi wyłącznie prymitywne;
+<code>DXFontStyle</code>, nie <code>System.Drawing.FontStyle</code>; brak koloru jako <code>null</code>, nigdy
+<code>Color.Empty</code>.</p>
+<ul class="tight">
+<li>Baza to <b>PostgreSQL</b> (<code>XpoProvider=Postgres</code>), nie SQL Server localdb.</li>
+<li>Target <b>net8.0</b>, DevExpress <b>26.1.4</b>, nie 25.2.</li>
+<li><b>Zmienna <code>XAF_UPDATE_DB</code> jednak istnieje</b> — <code>BlazorApplication.cs:37</code> czyta ją w obsłudze
+<code>DatabaseVersionMismatch</code>, a <code>trzy-repliki.sh:62</code> ustawia ją na <code>1</code>. Notatka fazy 1
+mówiąca, że zmiennej nie ma, jest błędna.</li>
+</ul>
+</details>
+</div>
+
+<p style="margin-top:32px;color:var(--dim);font-size:12px">
+Towarzysz HTML dla <a href="spec.md" target="_blank" rel="noopener">spec.md</a>.
+Ta sama treść, inna struktura — żadnego ustalenia, którego nie ma w bliźniaku md.
+</p>
+
+</body>
+</html>

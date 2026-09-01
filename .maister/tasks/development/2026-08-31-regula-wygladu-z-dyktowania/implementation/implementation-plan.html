@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Plan wdrożenia — Reguły wyglądu z dyktowania</title>
+<style>
+:root {
+  --bg:#f6f7f9; --surface:#fff; --border:#e2e5ea; --text:#1a1d23; --dim:#6b7280;
+  --accent:#4f46e5; --accent-soft:#eef2ff; --ok:#16a34a; --ok-soft:#ecfdf3;
+  --warn:#d97706; --warn-soft:#fffbeb; --crit:#dc2626; --crit-soft:#fef2f2;
+  --info:#2563eb; --info-soft:#eff6ff; --radius:10px;
+}
+@media (prefers-color-scheme: dark) {
+  :root { --bg:#111418; --surface:#1a1f26; --border:#2e3640; --text:#e6e9ee; --dim:#9aa4b2;
+    --accent:#818cf8; --accent-soft:#26294a; --ok:#4ade80; --ok-soft:#11291a;
+    --warn:#fbbf24; --warn-soft:#2e2410; --crit:#f87171; --crit-soft:#321616;
+    --info:#60a5fa; --info-soft:#15233a; }
+}
+* { box-sizing:border-box; }
+body { margin:0 auto; max-width:1100px; padding:24px 20px 64px; background:var(--bg);
+  color:var(--text); font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; }
+a { color:var(--accent); text-decoration:none; } a:hover { text-decoration:underline; }
+h1 { font-size:22px; letter-spacing:-.01em; } h2 { font-size:16px; margin-top:28px; }
+.card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius);
+  padding:16px 18px; margin:14px 0; }
+.badge { display:inline-block; font-size:11px; font-weight:600; text-transform:uppercase;
+  letter-spacing:.04em; padding:2px 8px; border-radius:99px; background:var(--accent-soft); color:var(--accent); }
+.sev { display:inline-block; font-size:10.5px; font-weight:700; text-transform:uppercase;
+  padding:1.5px 7px; border-radius:99px; margin-right:6px; }
+.sev.critical { background:var(--crit-soft); color:var(--crit); }
+.sev.warning  { background:var(--warn-soft); color:var(--warn); }
+.sev.info     { background:var(--info-soft); color:var(--info); }
+.pass { color:var(--ok); font-weight:600; } .fail { color:var(--crit); font-weight:600; }
+table { width:100%; border-collapse:collapse; }
+th, td { text-align:left; padding:7px 10px; border-bottom:1px solid var(--border); vertical-align:top; }
+th { font-size:11.5px; text-transform:uppercase; letter-spacing:.04em; color:var(--dim); }
+code { font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:12.5px;
+  background:var(--accent-soft); padding:1px 5px; border-radius:4px; }
+img.shot { max-width:100%; border:1px solid var(--border); border-radius:var(--radius); }
+details > summary { cursor:pointer; font-weight:600; }
+
+.crumbs { display:flex; gap:14px; font-size:13px; margin-bottom:18px; flex-wrap:wrap; }
+.crumbs a.md { margin-left:auto; color:var(--dim); }
+.crumbs .here { font-weight:650; color:var(--text); }
+.tiles { display:flex; gap:10px; flex-wrap:wrap; margin:14px 0; }
+.tile { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius);
+  padding:10px 16px; text-align:center; min-width:90px; }
+.tile b { display:block; font-size:20px; letter-spacing:-.01em; }
+.tile span { font-size:10.5px; text-transform:uppercase; letter-spacing:.05em; color:var(--dim); }
+
+/* --- konwencja synchronizacji postępu --- */
+.step.todo::before  { content:"☐ "; color:var(--dim); }
+.step.done::before  { content:"☑ "; color:var(--ok); }
+.step.done          { color:var(--dim); }
+.group.todo .g-badge::after { content:"pending"; }
+.group.done .g-badge::after { content:"✓ completed"; color:var(--ok); }
+
+.group { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius);
+  padding:16px 18px; margin:14px 0; }
+.group.done { border-color:var(--ok); }
+.g-head { display:flex; align-items:baseline; gap:10px; flex-wrap:wrap; margin-bottom:4px; }
+.g-head h3 { margin:0; font-size:15px; }
+.g-num { display:inline-flex; align-items:center; justify-content:center; min-width:26px; height:26px;
+  border-radius:50%; background:var(--accent-soft); color:var(--accent); font-weight:700; font-size:12.5px; }
+.g-badge { font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.04em;
+  padding:1.5px 8px; border-radius:99px; background:var(--accent-soft); color:var(--accent); margin-left:auto; }
+.meta { font-size:12.5px; color:var(--dim); margin:6px 0 10px; }
+.meta b { color:var(--text); font-weight:600; }
+.chips { display:flex; gap:5px; flex-wrap:wrap; margin:4px 0 10px; }
+.chips code { font-size:11.5px; background:var(--bg); border:1px solid var(--border); }
+.chips code.shared { border-color:var(--warn); background:var(--warn-soft); color:var(--warn); }
+ul.steps { list-style:none; padding-left:0; margin:8px 0; }
+ul.steps li.step { padding:3px 0 3px 2px; font-size:13.5px; }
+ul.steps li.step .sn { font-weight:700; color:var(--accent); margin-right:5px; font-size:12px; }
+.accept { background:var(--ok-soft); border-left:3px solid var(--ok); padding:8px 12px;
+  border-radius:0 6px 6px 0; margin-top:10px; font-size:13px; }
+.accept b { display:block; font-size:11px; text-transform:uppercase; letter-spacing:.04em;
+  color:var(--ok); margin-bottom:4px; }
+.accept ul { margin:0; padding-left:18px; }
+.vref { background:var(--info-soft); border-left:3px solid var(--info); padding:8px 12px;
+  border-radius:0 6px 6px 0; margin:10px 0; font-size:12.5px; }
+.vref b { display:block; font-size:11px; text-transform:uppercase; letter-spacing:.04em;
+  color:var(--info); margin-bottom:4px; }
+.vref dl { margin:0; }
+.vref dt { font-weight:600; margin-top:6px; }
+.vref dd { margin:1px 0 0 0; color:var(--dim); }
+.vref dd em { color:var(--text); font-style:normal; }
+.dag { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius);
+  padding:14px 16px; overflow-x:auto; }
+.dag pre { margin:0; font:12.5px/1.7 ui-monospace,SFMono-Regular,Menlo,monospace; }
+.toc { font-size:13px; color:var(--dim); margin:10px 0 4px; }
+.deferred { border-left:3px solid var(--warn); background:var(--warn-soft); }
+.parallel { color:var(--info); font-weight:600; }
+</style>
+</head>
+<body>
+
+<nav class="crumbs">
+  <a href="../dashboard.html">← Pulpit</a>
+  <a href="spec.html">Specyfikacja</a>
+  <span class="here">Plan wdrożenia</span>
+  <a href="visual-coverage.md" target="_blank" rel="noopener">Pokrycie makiet ↗</a>
+  <a href="implementation-plan.md" target="_blank" rel="noopener" class="md">bliźniak md ↗</a>
+</nav>
+
+<header>
+  <h1>Plan wdrożenia: Reguły wyglądu z dyktowania</h1>
+  <p class="meta">
+    <span class="badge">implementation plan</span>
+    &nbsp;2026-08-31 · repo <code>XafXPODynAssem</code> · gałąź <code>testy/fundament-modulu</code> @ <code>0811cb8</code>
+    · źródło: <a href="spec.html">spec.html</a> / <a href="spec.md" target="_blank" rel="noopener">spec.md ↗</a>
+  </p>
+</header>
+
+<div class="tiles">
+  <div class="tile"><b>12</b><span>grup zadań</span></div>
+  <div class="tile"><b>72</b><span>kroków</span></div>
+  <div class="tile"><b>36–46</b><span>nowych testów</span></div>
+  <div class="tile"><b>9</b><span>grup na ścieżce krytycznej</span></div>
+  <div class="tile"><b>2</b><span>pary równoległe</span></div>
+  <div class="tile"><b>10/10</b><span>pokrycie makiet</span></div>
+</div>
+
+<section class="tldr">
+  <div class="card">
+    <h2 style="margin-top:0">TL;DR</h2>
+    <p>Dwanaście grup zadań w jednym łańcuchu wymuszonym architekturą: <b>rozpoznanie → paleta → encja → walidator → kontroler → ekran → narzędzia AI → prompt → cykl życia → uprawnienia → przegląd testów → weryfikacja ręczna</b>.</p>
+    <p>Równolegle da się puścić tylko dwie pary (<span class="parallel">5 ‖ 6</span> oraz <span class="parallel">8 ‖ 9</span>) — reszta jest szeregowa, bo walidator jest wspólnym korzeniem trzech ścieżek użycia.</p>
+    <p>Testy piszemy do <b>istniejącego</b> projektu <code>XafXPODynAssem.Module.Tests</code> (61 testów, wszystkie zielone); obchodzenie drzewa kryterium z <code>CriteriaTests.cs</code> przenosimy do walidatora zamiast pisać od nowa.</p>
+    <p>Wdrożenie na Proxmox jest <b>poza tym planem</b> — użytkownik wstrzymał aktualizację środowisk, więc kryteria trzech replik (A-01…A-03) czekają, a ich lokalny odpowiednik weryfikujemy na jednej instancji.</p>
+  </div>
+
+  <div class="card">
+    <h2 style="margin-top:0">Kluczowe decyzje</h2>
+    <table>
+      <thead><tr><th style="width:34%">Decyzja</th><th>Uzasadnienie</th></tr></thead>
+      <tbody>
+      <tr><td>Rozpoznanie empiryczne jest <b>grupą zadań</b>, nie założeniem</td>
+          <td>Dwa pytania ze specyfikacji (odczyt motywu z kontrolera, kanał alfa w <code>IAppearance.BackColor</code>) rozstrzygamy sondą na uruchomionej aplikacji, zanim ktokolwiek napisze odcienie palety. Wynik jest plikiem z werdyktem, nie zdaniem w commicie.</td></tr>
+      <tr><td>Enumy i paleta w osobnej grupie <b>przed</b> encją</td>
+          <td><code>AppearanceColorRole</code> jest w sygnaturze palety, a <code>AppearanceRuleHealth</code> to jednocześnie typ pola trwałego encji i typ zwracany walidatora. Wydzielenie ich do <code>Module/Appearance/</code> rozcina cykl encja ↔ walidator. Jedyne odstępstwo od układu plików ze specyfikacji.</td></tr>
+      <tr><td>Walidator dostaje <b>własną grupę przed wszystkim</b>, co go używa</td>
+          <td>Kontroler, ekran i narzędzia AI wołają ten sam kod. Pierwszy krok grupy nie pisze walidatora, tylko ustala, jak zbudować <code>ITypesInfo</code> w teście — z zapisanym wariantem awaryjnym.</td></tr>
+      <tr><td>Ekran reguł <b>przed</b> narzędziami AI</td>
+          <td>Zależność treściowa, nie kolejność z grzeczności: komunikaty odmowy i sukcesu kierują do „Zarządzanie schematem → Reguły wyglądu", a ten ekran jest drogą cofnięcia, która czyni zapis przez <code>INonSecuredObjectSpaceFactory</code> akceptowalnym.</td></tr>
+      <tr><td>Kryteria <b>negatywne</b> pilnuje grupa, która mogłaby je złamać</td>
+          <td>A-26 (odcisk metadanych nietknięty) na grupie encji, A-14 (<code>.xafml</code> nietknięty) na grupie ekranu, zakaz zapytania do bazy w <code>OnCollectAppearanceRules</code> na grupie kontrolera. <code>git diff</code> na zamknięciu grupy łapie szkodę w miejscu jej powstania.</td></tr>
+      <tr><td>Nie optymalizujemy przedwcześnie</td>
+          <td>Pomiar na żywej liście: przy 3 regułach na 1000 wierszy narzut mechanizmu jest nierozstrzygalny w czasie (0,8 ms przy szumie 6,3 ms), a sam silnik DevExpressa kosztuje +38 ms. Różnica pojawia się dopiero przy ~30 regułach. Zostaje jeden twardy wymóg: pre-ładowanie w <code>OnActivated</code>.</td></tr>
+      <tr><td>Testy piszemy razem z kodem, do <b>istniejącego</b> projektu</td>
+          <td>Specyfikacja mówi „zero testów w repo" — nieaktualne od commita <code>0811cb8</code>. Sekcja „Podejście testowe" specyfikacji jest w tym punkcie nadpisana.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <h2 style="margin-top:0">Otwarte pytania i ryzyka</h2>
+    <ul>
+      <li><span class="sev critical">critical</span><b>Seam <code>ITypesInfo</code> w testach walidatora.</b> Projekt testowy to gołe xUnit z <code>ProjectReference</code>; <code>GraduationTests</code> używa <code>ReflectionDictionary</code> + <code>InMemoryDataStore</code>, czyli metadanych XPO, a nie <code>ITypesInfo</code> XAF-a. Nie jest zweryfikowane, że <code>new TypesInfo()</code> zadziała bez rozgrzewki XAF-a. Krok <b>4.1</b> ma to rozstrzygnąć; wariant awaryjny: zwężenie seamu do wstrzykiwanego <code>Func&lt;string, ITypeInfo&gt;</code>. Serce mechanizmu nie może zostać bez testów.</li>
+      <li><span class="sev warning">warning</span><b>Kierunek rozstrzygania konfliktu priorytetów (A-22) jest niepotwierdzony.</b> <code>AppearanceController.CombineAppearanceResults</code> jest wewnętrzny. Kontrakt: wyższy <code>Priority</code> wygrywa, sortujemy rosnąco. Sprawdzamy w kroku <b>12.5</b>. Wariant awaryjny: odwrócić <code>OrderBy</code> w <code>LoadRules()</code> i poprawić jedno zdanie w prompcie.</li>
+      <li><span class="sev info">info</span><b>Liczba testów przekracza ramowy zakres 16–34.</b> Ten zakres zakłada 3–5 grup; tutaj grup kodowych jest osiem. Wiążący jest limit <b>2–8 na grupę</b>, który powtarza także sekcja „Podejście testowe" specyfikacji. Świadome odstępstwo.</li>
+      <li><span class="sev warning">warning</span><b>Kryteria trzech replik (A-01, A-02, A-03) i higiena wdrożeniowa (A-27) są odłożone</b> razem z wdrożeniem na Proxmox. Lokalny odpowiednik A-02 (<code>INSERT</code> wprost do bazy → świeża sesja → kolorowanie) wchodzi do grupy 12, bo dowodzi braku bufora w procesie bez trzech replik. A-21 (WinForms) zostaje lokalnie.</li>
+      <li><span class="sev warning">warning</span><b>Cały łańcuch grup 2–12 jest przechodnio zablokowany przez grupę 1</b>, która wymaga uruchomionej aplikacji lokalnie. Jeśli lokalne środowisko nie wstanie (rozbieżność bazy w <code>CLAUDE.md</code>, prostowana w kroku 10.4, jest sygnałem ostrzegawczym), jedenaście grup czeka na sondę. Tanie obejście: grupa 2 wystawia enumy i <b>kształt</b> palety z odcieniami oznaczonymi jako oczekujące, odblokowując grupy 3–12; wartości odcieni wracają jako jeden krok uzupełniający po zapisaniu werdyktu. Zasada „nie zgadujemy" zostaje nienaruszona.</li>
+      <li><span class="sev warning">warning</span><b>Sonda z grupy 1 musi zostać cofnięta.</b> Tymczasowy <code>[Appearance(BackColor="#20…")]</code> na <code>CustomClass</code> nie ma prawa trafić do commita.</li>
+      <li><span class="sev info">info</span><b>Pliki dzielone między grupami</b> — <code>AppearanceRule.cs</code> (3 ‖ 6), <code>SchemaAIToolsProvider.cs</code> (7 ‖ 9), <code>CriteriaTests.cs</code> (4 ‖ 11), <code>GraduationTests.cs</code> (9 ‖ 11), <code>SchemaGuardTests.cs</code> (9 ‖ 11). Zadeklarowane w obu grupach każdej pary — wykonawca ma je szeregować.</li>
+    </ul>
+  </div>
+</section>
+
+<p class="toc">Zawartość:
+  <a href="#przeglad">Przegląd</a> ·
+  <a href="#kolejnosc">Kolejność wykonania</a> ·
+  <a href="#grupy">Grupy zadań</a> ·
+  <a href="#pokrycie">Pokrycie makiet</a> ·
+  <a href="#standardy">Zgodność ze standardami</a> ·
+  <a href="#odlozone">Poza planem</a>
+</p>
+
+<main>
+
+<h2 id="przeglad">Przegląd</h2>
+<div class="card">
+<table>
+  <tbody>
+  <tr><th>Grup zadań</th><td><b>12</b> — 8 kodowych, 1 rozpoznawcza, 1 higieny, 1 przeglądu testów, 1 weryfikacji ręcznej</td></tr>
+  <tr><th>Kroków łącznie</th><td><b>72</b></td></tr>
+  <tr><th>Nowych testów</th><td><b>36</b> w grupach kodowych + do <b>10</b> w przeglądzie = <b>36–46</b></td></tr>
+  <tr><th>Zestaw po zakończeniu</th><td>61 istniejących + 36–46 = <b>97–107 testów</b></td></tr>
+  <tr><th>Złożoność</th><td><b>Wysoka</b> — 5 nowych plików produkcyjnych, 7 zmienianych, 3 punkty integracji z silnikiem DevExpressa, 29 kryteriów akceptacji</td></tr>
+  <tr><th>Projekt testowy</th><td><code>XafXPODynAssem/XafXPODynAssem.Module.Tests</code> (xUnit 2.9.2, net8.0, w <code>XafXPODynAssem.slnx</code>). Tylko nowe testy: <code>dotnet test … --filter "FullyQualifiedName~&lt;Klasa&gt;"</code></td></tr>
+  </tbody>
+</table>
+</div>
+
+<h2 id="kolejnosc">Kolejność wykonania</h2>
+<div class="dag">
+<pre> 1. Rozpoznanie empiryczne              (6 kroków)   ────┐
+ 2. Enumy i paleta ról                  (6 kroków)   ←───┘
+ 3. Encja + rejestracja                 (7 kroków)   ← 2
+ 4. Walidator                           (7 kroków)   ← 2, 3
+       ├──────────────┐
+ 5. Kontrolery        │                 (7 kroków)   ← 3, 4   ⟂ równolegle z 6
+ 6. Ekran reguł  ←────┘                 (7 kroków)   ← 3, 4   ⟂ równolegle z 5
+ 7. Narzędzia AI                        (6 kroków)   ← 4, 6
+       ├──────────────┐
+ 8. Prompt systemowy  │                 (4 kroki)    ← 7      ⟂ równolegle z 9
+ 9. Cykl życia   ←────┘                 (6 kroków)   ← 4, 7   ⟂ równolegle z 8
+10. Uprawnienia i higiena               (5 kroków)   ← 3, 6
+11. Przegląd testów i luki              (5 kroków)   ← 2…10
+12. Weryfikacja ręczna                  (6 kroków)   ← 11</pre>
+</div>
+<p style="font-size:13px;color:var(--dim)"><b>Ścieżka krytyczna:</b> 1 → 2 → 3 → 4 → 6 → 7 → 9 → 11 → 12 (dziewięć grup). Równolegle wyłącznie <span class="parallel">5 ‖ 6</span> oraz <span class="parallel">8 ‖ 9</span> — pod warunkiem uszanowania plików dzielonych (oznaczonych <code class="shared">żółtym</code> chipem).</p>
+
+<h2 id="grupy">Grupy zadań</h2>
+
+<section data-group="1" class="group todo">
+  <div class="g-head"><span class="g-num">1</span><h3>Rozpoznanie empiryczne — motyw i kanał alfa</h3><span class="g-badge"></span></div>
+  <p class="meta"><b>Zależności:</b> brak &nbsp;·&nbsp; <b>Kroków:</b> 6 &nbsp;·&nbsp; <b>Testów:</b> — (grupa rozpoznawcza)</p>
+  <div class="chips">
+    <code>BusinessObjects/CustomClass.cs</code><span style="font-size:11.5px;color:var(--dim)">(sonda tymczasowa, cofana w 1.5)</span>
+    <code>analysis/rozpoznanie-motyw-i-alfa.md</code>
+  </div>
+  <p style="font-size:13px;color:var(--dim)">Ta grupa nie pisze kodu produkcyjnego. Jej jedynym produktem jest werdykt, od którego zależy kształt palety w grupie 2. Bez niego paleta byłaby zgadywana — a specyfikacja wprost zakazuje zgadywania w tych dwóch punktach.</p>
+  <ul class="steps">
+    <li data-step="1.1" class="step todo"><span class="sn">1.1</span>Sprawdzić w kodzie, czy aktywny motyw DevExpress Blazor jest odczytywalny z kontrolera — punkt wyjścia <code>appsettings.json</code>, sekcja <code>ThemeSwitcher</code> (cztery motywy, w tym <code>Blazing Dark</code>); ustalić też, czy wybór jest per użytkownik, czy globalny</li>
+    <li data-step="1.2" class="step todo"><span class="sn">1.2</span>Wstawić sondę alfy: tymczasowy <code>[Appearance(… BackColor = "#20DC3545")]</code> na <code>CustomClass</code></li>
+    <li data-step="1.3" class="step todo"><span class="sn">1.3</span>Uruchomić aplikację (<code>https://localhost:5001</code>, <code>Admin</code> bez hasła), odczytać z DOM wyliczony <code>background-color</code> — <code>rgba(…, 0.125)</code> znaczy, że alfa przechodzi</li>
+    <li data-step="1.4" class="step todo"><span class="sn">1.4</span>Powtórzyć odczyt po przełączeniu na <code>Blazing Dark</code> i zanotować, czy ta sama wartość jest czytelna na obu motywach</li>
+    <li data-step="1.5" class="step todo"><span class="sn">1.5</span><b>Cofnąć sondę</b> — usunąć atrybut, potwierdzić czystym <code>git diff</code></li>
+    <li data-step="1.6" class="step todo"><span class="sn">1.6</span>Zapisać werdykt do <code>analysis/rozpoznanie-motyw-i-alfa.md</code></li>
+  </ul>
+  <div class="accept"><b>Kryteria odbioru</b><ul>
+    <li>Plik zawiera <b>dwie odpowiedzi tak/nie</b> z konsekwencją każdej: motyw odczytywalny → paleta ma jeden zestaw odcieni czy dwa; alfa przechodzi → paleta ma sześć wartości półprzezroczystych czy dwanaście nieprzezroczystych</li>
+    <li>Werdykt poparty odczytem z DOM lub z kodu, nie rozumowaniem</li>
+    <li><code>git diff</code> na <code>CustomClass.cs</code> jest pusty — sonda cofnięta</li>
+  </ul></div>
+</section>
+
+<section data-group="2" class="group todo">
+  <div class="g-head"><span class="g-num">2</span><h3>Enumy i paleta ról</h3><span class="g-badge"></span></div>
+  <p class="meta"><b>Zależności:</b> Grupa 1 (wyłącznie dla doboru odcieni) &nbsp;·&nbsp; <b>Kroków:</b> 6 &nbsp;·&nbsp; <b>Testów:</b> 5</p>
+  <div class="chips">
+    <code>Appearance/AppearanceColorRole.cs</code>
+    <code>Appearance/AppearanceRuleHealth.cs</code>
+    <code>Appearance/AppearanceRolePalette.cs</code>
+    <code>Tests/AppearancePaletteTests.cs</code>
+  </div>
+  <div class="vref"><b>Visual References</b>
+    <dl>
+      <dt>makieta: <a href="../analysis/design-context/mockups/regu-a-zak-adka-wygl-d.html">regu-a-zak-adka-wygl-d.html</a> — <code>component:probka-roli</code></dt>
+      <dd>obszar: grupa „Rola koloru" — lista rozwijana z próbką koloru przy każdej z sześciu nazw</dd>
+      <dd><em>odbiór:</em> paleta zwraca parę (tło, czcionka) dla każdej z sześciu ról; polskie etykiety dokładnie jak na makiecie — Błąd, Ostrzeżenie, Sukces, Informacja, Wyciszone, Wyróżnione; <code>None</code> zwraca parę <code>null</code>/<code>null</code>, nie <code>Color.Empty</code></dd>
+    </dl>
+  </div>
+  <ul class="steps">
+    <li data-step="2.1" class="step todo"><span class="sn">2.1</span>Napisać 5 testów: alfa ≥ <code>0x80</code> nie rzuca (<code>uint.Parse</code> + <code>unchecked((int)…)</code>, pułapka <code>ColorValueConverter</code> Fleetmana); wejście puste/<code>null</code>/śmieciowe → <b><code>null</code></b>, nigdy <code>Color.Empty</code>; <code>Resolve(None)</code> → <code>(null, null)</code>; każda rola zwraca parę z <b>oboma</b> składnikami; nadpisanie z jednej strony ignorowane w całości</li>
+    <li data-step="2.2" class="step todo"><span class="sn">2.2</span>Zadeklarować <code>enum AppearanceColorRole { None, Error, Warning, Success, Info, Muted, Highlight }</code> z polskimi etykietami</li>
+    <li data-step="2.3" class="step todo"><span class="sn">2.3</span>Zadeklarować <code>enum AppearanceRuleHealth { Healthy = 0, Warning = 1, Broken = 2 }</code> („Sprawna" / „Ostrzeżenie" / „Niesprawna") — <b>odstępstwo od specyfikacji</b>: własny plik zamiast pliku walidatora, żeby encja nie zależała od walidatora</li>
+    <li data-step="2.4" class="step todo"><span class="sn">2.4</span>Napisać <code>AppearanceRolePalette</code> — statyczna, bezstanowa, bez bazy: <code>Resolve(AppearanceColorRole)</code> i <code>TryParseArgb(string, out Color)</code>; odcienie wg werdyktu z grupy 1</li>
+    <li data-step="2.5" class="step todo"><span class="sn">2.5</span>Napisać rozstrzyganie kolejności: nadpisanie (oba ustawione i parsujące) → rola → <code>null</code></li>
+    <li data-step="2.6" class="step todo"><span class="sn">2.6</span>Uruchomić <b>wyłącznie</b> <code>--filter "FullyQualifiedName~AppearancePaletteTests"</code></li>
+  </ul>
+  <div class="accept"><b>Kryteria odbioru</b><ul>
+    <li>5 nowych testów przechodzi; istniejące 61 nietknięte</li>
+    <li>Żadna ścieżka palety nie rzuca wyjątku na wejściu śmieciowym</li>
+    <li>Odcienie mają zapisane uzasadnienie odsyłające do <code>analysis/rozpoznanie-motyw-i-alfa.md</code></li>
+    <li>Spełnione kryterium <em>odbioru</em> z Visual References</li>
+  </ul></div>
+</section>
+
+<section data-group="3" class="group todo">
+  <div class="g-head"><span class="g-num">3</span><h3>Encja <code>AppearanceRule</code> i rejestracja typu</h3><span class="g-badge"></span></div>
+  <p class="meta"><b>Zależności:</b> Grupa 2 &nbsp;·&nbsp; <b>Kroków:</b> 7 &nbsp;·&nbsp; <b>Testów:</b> 5</p>
+  <div class="chips">
+    <code class="shared">BusinessObjects/AppearanceRule.cs</code>
+    <code>Module.cs</code>
+    <code>Tests/AppearanceRuleTests.cs</code>
+  </div>
+  <ul class="steps">
+    <li data-step="3.1" class="step todo"><span class="sn">3.1</span>Napisać 5 testów (wzorzec <code>GraduationTests</code>: <code>SimpleDataLayer</code> + <code>InMemoryDataStore</code>): puste <code>Criteria</code> → <code>"True"</code>, puste <code>TargetItems</code> → <code>"*"</code>; <code>Method</code> → <code>string.Empty</code> (nigdy <code>null</code>), <code>AppearanceItemType</code> → <code>"ViewItem"</code>, <code>Enabled</code> → <code>null</code>; settery interfejsu puste; <code>ResolveTargetType()</code> na nieistniejącej nazwie → <code>null</code>; domyślne <code>Priority = 10</code>, <code>IsEnabled = true</code>, kontekst <code>ListView</code></li>
+    <li data-step="3.2" class="step todo"><span class="sn">3.2</span>Napisać klasę: <code>BaseObject</code>, konstruktor <code>(Session)</code>, <code>SetPropertyValue</code> — 16 pól trwałych wg tabeli. <code>TargetTypeName</code> to <b><code>FullName</code></b>, nigdy <code>AssemblyQualifiedName</code>. <code>AppearanceContext</code> to enum <b>DevExpressa</b>. <code>RuleFontStyle</code> to <code>DXFontStyle?</code>, nie <code>System.Drawing.FontStyle</code></li>
+    <li data-step="3.3" class="step todo"><span class="sn">3.3</span>Zaimplementować dwanaście członków <code>IAppearanceRuleProperties</code>; <code>BackColor</code> i <code>FontStyle</code> <b>jawną implementacją interfejsu</b> (nazwy kolidują z polami trwałymi); kolor przez <code>AppearanceRolePalette</code></li>
+    <li data-step="3.4" class="step todo"><span class="sn">3.4</span><code>ResolveTargetType()</code> przez <code>typesInfo.FindTypeInfo(TargetTypeName)?.Type</code>, <b>bez cache'owania</b> — nigdy <code>Type.GetType</code>, który nie widzi typów kompilowanych Roslynem</li>
+    <li data-step="3.5" class="step todo"><span class="sn">3.5</span><code>[NonPersistent] Type TargetType</code> z <code>LocalizedClassInfoTypeConverter</code> + <code>[ImmediatePostData]</code>; setter czyści <code>Criteria</code> i <code>TargetItems</code> przy zmianie typu</li>
+    <li data-step="3.6" class="step todo"><span class="sn">3.6</span>Dopisać <code>AdditionalExportedTypes.Add(typeof(BusinessObjects.AppearanceRule));</code> w <code>Module.cs</code>, za trzema typami <code>Workflow</code> (linie 102–104)</li>
+    <li data-step="3.7" class="step todo"><span class="sn">3.7</span>Uruchomić <code>--filter "FullyQualifiedName~AppearanceRuleTests"</code></li>
+  </ul>
+  <div class="accept"><b>Kryteria odbioru</b><ul>
+    <li>5 nowych testów przechodzi</li>
+    <li><b>A-26 na zamknięciu grupy:</b> <code>git diff Module.cs</code> pokazuje <b>wyłącznie</b> dopisaną linię <code>AdditionalExportedTypes</code> — zero zmian w <code>QueryMetadata</code>, <code>GetMetadataFingerprint</code>, <code>ComputeFingerprint</code>. Dopisanie reguł do odcisku restartowałoby wszystkie trzy repliki przy każdym podyktowanym zdaniu</li>
+    <li><code>dotnet build XafXPODynAssem.slnx</code> przechodzi</li>
+  </ul></div>
+</section>
+
+<section data-group="4" class="group todo">
+  <div class="g-head"><span class="g-num">4</span><h3>Walidator reguł — serce mechanizmu</h3><span class="g-badge"></span></div>
+  <p class="meta"><b>Zależności:</b> Grupa 2, Grupa 3 &nbsp;·&nbsp; <b>Kroków:</b> 7 &nbsp;·&nbsp; <b>Testów:</b> 8</p>
+  <div class="chips">
+    <code>Validation/AppearanceRuleValidator.cs</code>
+    <code>Tests/AppearanceRuleValidatorTests.cs</code>
+    <code class="shared">Tests/CriteriaTests.cs</code>
+  </div>
+  <p style="font-size:13px;color:var(--dim)">Jeden walidator, trzy miejsca użycia (narzędzie AI przed zapisem, kontroler przy aktywacji widoku, ekran reguł). Warunek konieczny: <b>bez <code>IObjectSpace</code> i bez zapytań do bazy</b> — miejsce drugie to ścieżka aktywacji widoku, na której zapytanie jest zakazane.</p>
+  <ul class="steps">
+    <li data-step="4.1" class="step todo"><span class="sn">4.1</span><b>Ustalić seam <code>ITypesInfo</code> na potrzeby testów — zanim powstanie kod walidatora.</b> Sprawdzić, czy <code>DevExpress.ExpressApp.DC.TypesInfo</code> da się skonstruować bez rozgrzewki XAF-a. <b>Wariant awaryjny:</b> rdzeń przyjmuje wstrzykiwane <code>Func&lt;string, ITypeInfo&gt;</code>, nakładka publiczna go opakowuje, testy podstawiają atrapę. Wynik zapisać w komentarzu klasy</li>
+    <li data-step="4.2" class="step todo"><span class="sn">4.2</span>Napisać 8 testów — po jednym na sprawdzenia 1–10: <code>Broken</code> dla braku encji, encji nierozwiązywalnej, klasy bazowej (A-13), pustego i nieparsującego kryterium, kryterium nad nieistniejącym polem (z podpowiedzią „Czy chodziło o …?"); <b><code>Healthy</code> dla <code>[TerminPlatnosci] &lt; LocalDateTimeToday()</code> (A-07)</b>; <code>Warning</code> dla pola ukrytego (A-25), połowicznego nadpisania i reguły nic nie zmieniającej; zatrzymanie na pierwszym <code>Broken</code></li>
+    <li data-step="4.3" class="step todo"><span class="sn">4.3</span>Przenieść obchodzenie drzewa z <code>CriteriaTests.CollectProperties</code>/<code>Walk</code> do walidatora — kod jest gotowy i przetestowany. Sprawdzamy <b>wyłącznie</b> węzły <code>OperandProperty</code>; funkcje i stałe pomijamy. W <code>CriteriaTests.cs</code> zastąpić prywatną kopię wywołaniem walidatora — jedna implementacja, nie dwie</li>
+    <li data-step="4.4" class="step todo"><span class="sn">4.4</span>Rozwijać ścieżki kropkowane (<code>Kontrahent.NazwaKlienta</code>) człon po członie przez <code>ITypeInfo.FindMember(...)</code></li>
+    <li data-step="4.5" class="step todo"><span class="sn">4.5</span>Napisać <code>Check(targetTypeName, criteria, targetItems, backColorOverride, fontColorOverride, ITypesInfo)</code> → <code>readonly record struct AppearanceRuleCheck</code>. <code>typesInfo</code> <b>wstrzykiwany, nigdy pobierany w środku</b>. Komunikaty po polsku, dokładnie wg tabeli</li>
+    <li data-step="4.6" class="step todo"><span class="sn">4.6</span>Nakładka <code>Check(AppearanceRule, ITypesInfo)</code> wpięta w <code>OnSaving()</code> — jedno miejsce dla wszystkich ścieżek zapisu, ustawiające <code>Health</code>, <code>Diagnosis</code>, <code>CheckedOn</code> <b>tylko na własnym obiekcie</b></li>
+    <li data-step="4.7" class="step todo"><span class="sn">4.7</span>Uruchomić <code>--filter "…AppearanceRuleValidatorTests|…CriteriaTests"</code></li>
+  </ul>
+  <div class="accept"><b>Kryteria odbioru</b><ul>
+    <li>8 nowych testów przechodzi; dotychczasowe <code>CriteriaTests</code> dalej zielone po przeniesieniu</li>
+    <li>Walidator nie ma ani jednego odwołania do <code>IObjectSpace</code>, <code>Session</code> ani <code>XafTypesInfo.Instance</code> — przegląd przez <code>grep</code></li>
+    <li><code>OnSaving()</code> nie zapisuje niczego poza własnym obiektem (żadnego zewnętrznego bufora — błąd DataDrive'a, który przy wycofanej transakcji zostawia regułę-widmo)</li>
+  </ul></div>
+</section>
+
+<section data-group="5" class="group todo">
+  <div class="g-head"><span class="g-num">5</span><h3>Kontrolery — dostarczenie reguł do silnika</h3><span class="g-badge"></span></div>
+  <p class="meta"><b>Zależności:</b> Grupa 3, Grupa 4 &nbsp;·&nbsp; <b>Kroków:</b> 7 &nbsp;·&nbsp; <b>Testów:</b> 4 &nbsp;·&nbsp; <span class="parallel">równolegle z grupą 6</span></p>
+  <div class="chips">
+    <code>Controllers/AppearanceRuleViewController.cs</code>
+    <code>Controllers/AppearanceRuleEditorController.cs</code>
+    <code>Tests/AppearanceRuleSelectionTests.cs</code>
+  </div>
+  <div class="vref"><b>Visual References</b>
+    <dl>
+      <dt>makieta: <a href="../analysis/design-context/mockups/efekt-lista-faktur.html">efekt-lista-faktur.html</a> — <code>screen:efekt-faktury</code></dt>
+      <dd>obszar: cała tabela faktur — pokolorowane wiersze niezapłaconych</dd>
+      <dd><em>odbiór:</em> efekt widoczny na <b>zwykłej liście faktur, bez żadnego dodatkowego elementu interfejsu</b> — kontroler nie dokłada paska, przycisku ani kolumny; kolorowanie obejmuje cały wiersz przy <code>TargetItems = "*"</code></dd>
+    </dl>
+  </div>
+  <ul class="steps">
+    <li data-step="5.1" class="step todo"><span class="sn">5.1</span>Napisać 4 testy na wydzieloną, czystą metodę selekcji i sortowania (bez <code>Frame</code>): nierozwiązywalny typ pomijany (A-11); dopasowanie przez <code>IsAssignableFrom</code>, nigdy <code>StartsWith</code> — reguła dla <code>Faktura</code> <b>nie</b> łapie <code>FakturaPozycja</code>; niepusty <code>ViewId</code> ≠ <code>View.Id</code> odsiewa; <code>OrderBy(Priority).ThenBy(Name).ThenBy(Oid)</code> deterministyczne</li>
+    <li data-step="5.2" class="step todo"><span class="sn">5.2</span><code>AppearanceRuleViewController : ObjectViewController&lt;ObjectView, object&gt;</code> — sekwencja <code>OnActivated</code> <b>bez odstępstw</b>: strażniki (<code>NonPersistentObjectSpace</code> dopasowaniem <b>wzorca</b>, <code>IsDisposed</code>, <code>ObjectTypeInfo?.Type</code>) → <code>LoadRules()</code> w <code>try/catch</code> → pusta lista kończy bez subskrypcji → <b><code>ResetRulesCache()</code> → subskrypcja → <code>Refresh()</code></b>. Bez <code>ResetRulesCache()</code> zdarzenie w ogóle się nie odpala</li>
+    <li data-step="5.3" class="step todo"><span class="sn">5.3</span><code>LoadRules()</code> — jedyne miejsce rozmawiające z bazą, w <code>OnActivated</code>. Przestrzeń z <code>INonSecuredObjectSpaceFactory</code>, nie <code>View.ObjectSpace</code> (inaczej nie-admin dostaje pustą listę, A-28). Filtr w bazie <b>wyłącznie</b> <code>IsEnabled = True</code> — <code>Health</code> nie może być filtrem (A-23). <code>try/catch</code> <b>per reguła</b>, nigdy wokół całego ładowania</li>
+    <li data-step="5.4" class="step todo"><span class="sn">5.4</span>Handler <code>OnCollectAppearanceRules</code> — <code>try/catch</code> wokół <b>całego</b> ciała, <code>e.AppearanceRules.AddRange(_rules)</code>, zero logiki poza tym (A-12)</li>
+    <li data-step="5.5" class="step todo"><span class="sn">5.5</span><code>OnDeactivated</code>: odsubskrybowanie → <code>_rules = null</code> → zwolnienie własnej przestrzeni obiektów → <code>base</code></li>
+    <li data-step="5.6" class="step todo"><span class="sn">5.6</span><code>AppearanceRuleEditorController</code> — na <code>ObjectSpace.Committed</code> (<b>nigdy <code>OnSaving</code></b>) reset cache własnej ramki + <code>Refresh()</code>. Oba kontrolery działają naraz na widokach reguł i <b>tak ma być</b> — udokumentować, żeby nikt tego nie „naprawił". Żadnego statycznego eventu rozgłaszającego</li>
+    <li data-step="5.7" class="step todo"><span class="sn">5.7</span>Uruchomić <code>--filter "FullyQualifiedName~AppearanceRuleSelectionTests"</code></li>
+  </ul>
+  <div class="accept"><b>Kryteria odbioru</b><ul>
+    <li>4 nowe testy przechodzą</li>
+    <li><b>Twardy wymóg wydajnościowy, przegląd kodu:</b> w ciele <code>OnCollectAppearanceRules</code> nie ma ani jednego wywołania <code>ObjectSpace</code>, <code>CreateObjectSpace</code>, <code>GetObjects</code> ani <code>Session</code></li>
+    <li><code>try/catch</code> obejmuje całe ciało handlera (A-12)</li>
+    <li>Kontrolery w <code>Module/Controllers/</code>, nigdzie nierejestrowane ręcznie — parytet Blazor/WinForms z automatycznego skanowania (W-20). <b>Zweryfikowane, nie odziedziczone:</b> <code>.AddConditionalAppearance()</code> stoi w <b>obu</b> hostach (<code>Blazor.Server/Startup.cs:53</code>, <code>Win/Startup.cs:30</code>) — dokładamy źródło reguł, nie silnik. Dla kontrastu <code>.AddStateMachine</code> jest <b>tylko</b> w Blazorze (linia 70); ta asymetria dotyczy przepływów, nie reguł wyglądu. Grupa 5 <b>nie</b> ma kroku rejestracji po stronie WinForms i nie potrzebuje go</li>
+    <li>Spełnione kryterium <em>odbioru</em> z Visual References</li>
+  </ul></div>
+</section>
+
+<section data-group="6" class="group todo">
+  <div class="g-head"><span class="g-num">6</span><h3>Ekran reguł</h3><span class="g-badge"></span></div>
+  <p class="meta"><b>Zależności:</b> Grupa 3, Grupa 4 &nbsp;·&nbsp; <b>Kroków:</b> 7 &nbsp;·&nbsp; <b>Testów:</b> 3 &nbsp;·&nbsp; <span class="parallel">równolegle z grupą 5</span></p>
+  <div class="chips">
+    <code class="shared">BusinessObjects/AppearanceRule.cs</code>
+    <code>Controllers/AppearanceRuleActionsController.cs</code>
+    <code>Tests/AppearanceRuleScreenTests.cs</code>
+  </div>
+  <div class="vref"><b>Visual References</b> — sześć pozycji
+    <dl>
+      <dt>makieta: <a href="../analysis/design-context/mockups/lista-regu-wygl-du.html">lista-regu-wygl-du.html</a> — <code>screen:lista-regul</code></dt>
+      <dd>obszar: nagłówek tabeli, wiersz filtra, pasek akcji, podsumowanie pod tabelą</dd>
+      <dd><em>odbiór:</em> kolumny w kolejności Nazwa, Encja docelowa, Kryterium, Rola koloru (z próbką), Kontekst, Priorytet, Włączona, <b>Stan</b>; pasek akcji Nowa / Usuń / Odśwież / <b>Sprawdź reguły</b> / <b>Klonuj</b>; wiersze niesprawne na czerwono, ostrzeżenia na żółto, wyłączone szare kursywą; podsumowanie „N reguł · M niesprawnych · …"</dd>
+      <dt>makieta: <a href="../analysis/design-context/mockups/lista-regu-wygl-du.html">lista-regu-wygl-du.html</a> — <code>component:odznaka-stanu</code></dt>
+      <dd>obszar: kolumna „Stan" — odznaka w komórce</dd>
+      <dd><em>odbiór:</em> cztery warianty — Sprawna / Ostrzeżenie / Niesprawna / Wyłączona; stan wyłączenia wynika z <code>IsEnabled</code>, nie z <code>Health</code></dd>
+      <dt>makieta: <a href="../analysis/design-context/mockups/regu-a-zak-adka-definicja.html">regu-a-zak-adka-definicja.html</a> — <code>screen:regula-definicja</code></dt>
+      <dd>obszar: zakładka „Definicja", grupa „Co reguła obejmuje" + panel pod formularzem</dd>
+      <dd><em>odbiór:</em> pola w kolejności Nazwa, Encja docelowa, Kryterium (edytor filtra podpowiadający <b>wyłącznie</b> pola wybranej encji), Pola docelowe (<b>checkboxy</b>, <code>wszystkie (*)</code> pierwsze — nie wolny tekst), Kontekst, Ogranicz do widoku, Priorytet, Włączona; akcje „Sprawdź tę regułę" i „Klonuj"</dd>
+      <dt>makieta: <a href="../analysis/design-context/mockups/regu-a-zak-adka-definicja.html">regu-a-zak-adka-definicja.html</a> — <code>component:panel-diagnozy</code></dt>
+      <dd>obszar: panel pod formularzem, widoczny tylko dla reguły niesprawnej</dd>
+      <dd><em>odbiór:</em> powód niesprawności, podpowiedź naprawy i znacznik „Wykryto przy zapisie · {data}" zasilany z <code>CheckedOn</code></dd>
+      <dt>makieta: <a href="../analysis/design-context/mockups/regu-a-zak-adka-wygl-d.html">regu-a-zak-adka-wygl-d.html</a> — <code>screen:regula-wyglad</code></dt>
+      <dd>obszar: zakładka „Wygląd" — trzy grupy od góry do dołu</dd>
+      <dd><em>odbiór:</em> Rola koloru (z podglądem) → Pozostałe efekty (styl czcionki jako cztery pola wyboru, Widoczność) → <b>na samym dole</b> „Nadpisanie kolorem — dla administratora, pomija rolę" z notkami „Ustawiając jedno, ustaw drugie" i „Asystent nie korzysta z tych pól"</dd>
+      <dt>makieta: <a href="../analysis/design-context/mockups/regu-a-zak-adka-wygl-d.html">regu-a-zak-adka-wygl-d.html</a> — <code>component:probka-roli</code></dt>
+      <dd>obszar: grupa „Rola koloru" — podgląd trzech wierszy</dd>
+      <dd><em>odbiór:</em> próbka pokazuje <b>rolę rozwiązaną w bieżącej skórce</b>, nigdy zapisanego ARGB</dd>
+    </dl>
+  </div>
+  <ul class="steps">
+    <li data-step="6.1" class="step todo"><span class="sn">6.1</span>Napisać 3 testy: <code>GetCheckedListBoxItems</code> stawia <code>*</code> <b>zawsze pierwsze</b> i pomija <code>IsService</code> oraz niewidoczne; zmiana <code>TargetType</code> wyzwala <code>ItemsChanged</code> i czyści <code>Criteria</code>/<code>TargetItems</code>; klon kopiuje definicję, ale <b>nie</b> <code>Health</code>, <code>Diagnosis</code> ani <code>CheckedOn</code></li>
+    <li data-step="6.2" class="step todo"><span class="sn">6.2</span>Atrybuty klasy: <code>[DefaultClassOptions]</code>, <code>[NavigationItem("Zarządzanie schematem")]</code>, <code>[DefaultProperty]</code>, <code>[XafDisplayName("Reguła wyglądu")]</code> — wzorzec <code>Workflow.cs:27-28</code>, <b>bez tykania <code>.xafml</code></b> (W-08)</li>
+    <li data-step="6.3" class="step todo"><span class="sn">6.3</span>Trzy statyczne <code>[Appearance]</code> wyróżniające wiersze na liście reguł — wzorzec <code>CustomClass.cs:23-32</code>: <code>Health = 2</code> czerwono, <code>Health = 1</code> żółto, <code>IsEnabled = False</code> szaro kursywą (W-16). Jedyne miejsce, gdzie regułę wolno zapisać atrybutem — klasa jest znana w czasie kompilacji</li>
+    <li data-step="6.4" class="step todo"><span class="sn">6.4</span><code>ICheckedListBoxItemsProvider</code> + <code>[EditorAlias(CheckedListBoxEditor)]</code> na <code>TargetItems</code>; <code>[CriteriaOptions(nameof(TargetType))]</code> + <code>[EditorAlias(CriteriaPropertyEditor)]</code> na <code>Criteria</code> (A-18)</li>
+    <li data-step="6.5" class="step todo"><span class="sn">6.5</span>Ułożyć zakładki „Definicja" i „Wygląd" atrybutami układu XAF wg makiet — nadpisanie kolorem na samym dole, opisane jako wyjście awaryjne</li>
+    <li data-step="6.6" class="step todo"><span class="sn">6.6</span><code>AppearanceRuleActionsController</code> z trzema akcjami: „Sprawdź reguły" (lista, przelicza <code>Health</code>/<code>Diagnosis</code>/<code>CheckedOn</code>), „Sprawdź tę regułę" (szczegóły), „Klonuj" (W-10, W-19, A-20)</li>
+    <li data-step="6.7" class="step todo"><span class="sn">6.7</span>Uruchomić <code>--filter "FullyQualifiedName~AppearanceRuleScreenTests"</code></li>
+  </ul>
+  <div class="accept"><b>Kryteria odbioru</b><ul>
+    <li>3 nowe testy przechodzą</li>
+    <li><b>A-14 na zamknięciu grupy:</b> <code>git status</code> nie pokazuje ani jednego zmienionego pliku <code>.xafml</code></li>
+    <li>Pozycja „Reguły wyglądu" w grupie „Zarządzanie schematem", obok „Klasy użytkownika" i „Przepływy"</li>
+    <li>Spełnione <b>każde</b> kryterium <em>odbioru</em> z Visual References (sześć pozycji)</li>
+  </ul></div>
+</section>
+
+<section data-group="7" class="group todo">
+  <div class="g-head"><span class="g-num">7</span><h3>Narzędzia AI</h3><span class="g-badge"></span></div>
+  <p class="meta"><b>Zależności:</b> Grupa 4, Grupa 6 &nbsp;·&nbsp; <b>Kroków:</b> 6 &nbsp;·&nbsp; <b>Testów:</b> 5</p>
+  <div class="chips">
+    <code class="shared">Services/SchemaAIToolsProvider.cs</code>
+    <code>Tests/AppearanceToolsTests.cs</code>
+  </div>
+  <div class="vref"><b>Visual References</b> — trzy pozycje
+    <dl>
+      <dt>makieta: <a href="../analysis/design-context/mockups/czat-utworzenie-regu-y-z-dyktowania.html">czat-utworzenie-regu-y-z-dyktowania.html</a> — <code>screen:czat-utworzenie</code></dt>
+      <dd>obszar: cała rozmowa od pierwszej wiadomości do potwierdzenia zapisu</dd>
+      <dd><em>odbiór:</em> przebieg w tej kolejności — dyktowanie → wywołanie <code>sprawdz_regule_wygladu</code> widoczne w czacie → <b>jedno</b> dopytanie → podsumowanie tabelką → <code>utworz_regule_wygladu</code> → komunikat sukcesu z tabelką i zdaniem o F5 („wdrożenie nie jest potrzebne"), z odnośnikiem do „Zarządzanie schematem → Reguły wyglądu"</dd>
+      <dt>makieta: <a href="../analysis/design-context/mockups/czat-walidacja-odrzuca-bubla.html">czat-walidacja-odrzuca-bubla.html</a> — <code>screen:czat-blad</code></dt>
+      <dd>obszar: blok odmowy i następująca po nim wiadomość asystenta</dd>
+      <dd><em>odbiór:</em> odmowa wraca z <b>listą realnych pól encji</b>; asystent sam proponuje najbliższe pole i czeka na potwierdzenie; o rolę koloru dopytuje osobno, mówiąc wprost, że jej nie zgaduje; <b>zero rekordów w tabeli</b> po odmowie</dd>
+      <dt>makieta: obie makiety czatu — <code>component:wywolanie-narzedzia</code></dt>
+      <dd>obszar: bloki wywołania narzędzia</dd>
+      <dd><em>odbiór:</em> blok pokazuje nazwę narzędzia i wynik, także na ścieżce odmowy — konwencja <code>PROBLEM:</code> / <code>MISSING:</code> jak w istniejącym <code>validate_report_spec</code></dd>
+    </dl>
+  </div>
+  <ul class="steps">
+    <li data-step="7.1" class="step todo"><span class="sn">7.1</span>Napisać 5 testów na wydzielone, czyste metody budujące odpowiedzi: odmowa przy nieistniejącym polu zawiera <b>listę dostępnych pól</b> (A-05); brak roli daje <code>MISSING:</code> i sześć polskich opcji (A-06); sukces zawiera „wdrożenie nie jest potrzebne" i odnośnik do ekranu (A-08); rola spoza listy odrzucana, nie mapowana; każda odmowa kończy się „Żadna reguła nie została zapisana."</li>
+    <li data-step="7.2" class="step todo"><span class="sn">7.2</span><code>ValidateAppearanceRule</code> (<code>sprawdz_regule_wygladu</code>) — tylko odczyt, <code>[Description]</code> po angielsku dokładnie wg specyfikacji, konwencja <code>PROBLEM:</code>/<code>MISSING:</code></li>
+    <li data-step="7.3" class="step todo"><span class="sn">7.3</span><code>CreateAppearanceRule</code> (<code>utworz_regule_wygladu</code>) — waliduje <b>ponownie, wewnętrznie</b>, przed każdym zapisem, bo bramka potwierdzenia jest wyłącznie promptowa. Kontrakt <b>nie przyjmuje</b> <code>backColor</code>, <code>fontColor</code>, <code>viewId</code>, <code>fontStyle</code>, <code>visibility</code>. Zapis wzorcem <code>BuildReport</code>; odnotować w komentarzu świadome obejście bezpieczeństwa XAF</li>
+    <li data-step="7.4" class="step todo"><span class="sn">7.4</span>Dwa wpisy w <code>CreateTools()</code>, w nowej grupie za narzędziami workflow — <code>SchemaAIToolsProvider</code> jest singletonem, <b>żadnej nowej rejestracji DI</b></li>
+    <li data-step="7.5" class="step todo"><span class="sn">7.5</span><code>try/catch</code> wokół całych ciał obu metod, zwracający <code>$"Error …: {ex.Message}"</code> — narzędzie nigdy nie rzuca przez granicę</li>
+    <li data-step="7.6" class="step todo"><span class="sn">7.6</span>Uruchomić <code>--filter "FullyQualifiedName~AppearanceToolsTests"</code></li>
+  </ul>
+  <div class="accept"><b>Kryteria odbioru</b><ul>
+    <li>5 nowych testów przechodzi</li>
+    <li>Walidator z grupy 4 wołany na <b>obu</b> ścieżkach, a <code>Broken</code> blokuje zapis</li>
+    <li>Teksty <code>[Description]</code> po angielsku, teksty odmowy po polsku — konwencja repo</li>
+    <li>Spełnione każde kryterium <em>odbioru</em> z Visual References (trzy pozycje)</li>
+  </ul></div>
+</section>
+
+<section data-group="8" class="group todo">
+  <div class="g-head"><span class="g-num">8</span><h3>Prompt systemowy i podpowiedź w czacie</h3><span class="g-badge"></span></div>
+  <p class="meta"><b>Zależności:</b> Grupa 7 &nbsp;·&nbsp; <b>Kroków:</b> 4 &nbsp;·&nbsp; <b>Testów:</b> 2 &nbsp;·&nbsp; <span class="parallel">równolegle z grupą 9</span></p>
+  <div class="chips">
+    <code>Services/SchemaDiscoveryService.cs</code>
+    <code>Services/AIChatDefaults.cs</code>
+    <code>Tests/SystemPromptTests.cs</code>
+  </div>
+  <p style="font-size:13px;color:var(--dim)">To <b>jedyna istniejąca bramka na człowieka</b> — czysto tekstowa. Prompt jest odświeżany przed każdą turą (<code>AIChatService.AskAsync</code> → <code>RefreshSystemPrompt()</code>), więc sekcja działa od razu po wdrożeniu kodu.</p>
+  <ul class="steps">
+    <li data-step="8.1" class="step todo"><span class="sn">8.1</span>Napisać 2 testy: prompt zawiera sekcję <code>## Appearance Rules …</code> i stoi ona <b>między</b> <code>## Workflows (State Machines)</code> a <code>## Supported Field Types</code>; sekcja wymienia obie nazwy narzędzi, sześć ról i zdanie „NEVER guess"</li>
+    <li data-step="8.2" class="step todo"><span class="sn">8.2</span>Wstawić sekcję do <code>GenerateSystemPrompt</code> w konwencji <code>sb.AppendLine("…")</code>, <b>tekst dosłowny</b> ze specyfikacji (10 punktów)</li>
+    <li data-step="8.3" class="step todo"><span class="sn">8.3</span>Dopisać <code>PromptSuggestionItem</code> „Kolorowanie na listach" do <code>AIChatDefaults.PromptSuggestions</code>, obok „Przygotuj raport" (W-15)</li>
+    <li data-step="8.4" class="step todo"><span class="sn">8.4</span>Uruchomić <code>--filter "FullyQualifiedName~SystemPromptTests"</code></li>
+  </ul>
+  <div class="accept"><b>Kryteria odbioru</b><ul>
+    <li>2 nowe testy przechodzą</li>
+    <li>Tekst sekcji identyczny z blokiem ze specyfikacji — bez parafrazy, bo to kontrakt zachowania modelu</li>
+    <li>Podpowiedź w czacie czyni funkcję odkrywalną bez czytania dokumentacji</li>
+  </ul></div>
+</section>
+
+<section data-group="9" class="group todo">
+  <div class="g-head"><span class="g-num">9</span><h3>Cykl życia — graduacja, usunięcie encji, strażnik pól</h3><span class="g-badge"></span></div>
+  <p class="meta"><b>Zależności:</b> Grupa 4, Grupa 7 &nbsp;·&nbsp; <b>Kroków:</b> 6 &nbsp;·&nbsp; <b>Testów:</b> 4 &nbsp;·&nbsp; <span class="parallel">równolegle z grupą 8</span></p>
+  <div class="chips">
+    <code>Services/GraduationService.cs</code>
+    <code>Controllers/GraduationWarningController.cs</code>
+    <code class="shared">Services/SchemaAIToolsProvider.cs</code>
+    <code>Validation/FieldTypeChangeGuard.cs</code>
+    <code class="shared">Tests/GraduationTests.cs</code>
+    <code class="shared">Tests/SchemaGuardTests.cs</code>
+  </div>
+  <p style="font-size:13px;color:var(--dim)">Graduacja jest tu jednym z wyzwalaczy przeliczenia, nie przypadkiem szczególnym. Fakt bazowy: <code>GenerateEntityClass</code> nie emituje deklaracji <code>namespace</code>, więc <code>FullName</code> przechodzi z <code>XafXPODynAssem.RuntimeEntities.X</code> na <code>XafXPODynAssem.Module.BusinessObjects.X</code> i <b>każda reguła cicho przestaje kolorować</b>.</p>
+  <ul class="steps">
+    <li data-step="9.1" class="step todo"><span class="sn">9.1</span>Napisać 4 testy — 2 do <code>GraduationTests.cs</code>, 2 do <code>SchemaGuardTests.cs</code>: czysta funkcja migracji nazwy (nazwa spoza przestrzeni runtime zostaje nietknięta); źródło zawiera <code>// --- Appearance Note ---</code> przy ≥1 regule i <b>nie zawiera</b> przy zerze (A-24); <code>FindRulesTargetingField</code> znajduje regułę przez <code>TargetItems</code> i przez <code>OperandProperty</code> w kryterium; ukrycie pola daje <b>ostrzeżenie, nie blokadę</b> (A-25)</li>
+    <li data-step="9.2" class="step todo"><span class="sn">9.2</span>Migracja <code>TargetTypeName</code> przy przejściu <code>Status</code> na <code>Graduating</code>/<code>Compiled</code>, z przeliczeniem <code>Health</code>/<code>Diagnosis</code> przez walidator (W-11)</li>
+    <li data-step="9.3" class="step todo"><span class="sn">9.3</span>Dopisać do komunikatu w <code>GraduationWarningController</code> zdanie o regułach: ile zmigrowano i że zaczną działać po wklejeniu źródła i przebudowie obrazu (A-23)</li>
+    <li data-step="9.4" class="step todo"><span class="sn">9.4</span>Sekcja <code>// --- Appearance Note ---</code> w <code>GenerateSource</code>, obok <code>// --- XPO Note ---</code> i <code>// --- Web API Note ---</code>, treść dosłownie ze specyfikacji (W-12). Reguł <b>nie</b> generujemy jako atrybutów — atrybut zamroziłby odcień i wymagał przebudowy obrazu na każdą zmianę koloru</li>
+    <li data-step="9.5" class="step todo"><span class="sn">9.5</span><code>delete_entity</code> przelicza reguły wskazujące skasowany typ i dopisuje do odpowiedzi, ile osierocono; reguł <b>nie kasujemy</b> (W-14). <code>FindRulesTargetingField</code> w <code>FieldTypeChangeGuard</code> obok <code>IsFieldRemovalSafe</code> (linia 179) + ostrzeżenie przy <code>IsVisibleInListView = false</code> (W-13)</li>
+    <li data-step="9.6" class="step todo"><span class="sn">9.6</span>Uruchomić <code>--filter "…GraduationTests|…SchemaGuardTests"</code></li>
+  </ul>
+  <div class="accept"><b>Kryteria odbioru</b><ul>
+    <li>4 nowe testy przechodzą; dotychczasowe w obu plikach dalej zielone</li>
+    <li>Migracja nazwy jest czystą funkcją, testowalną bez uruchamiania aplikacji</li>
+    <li>Ostrzeżenie przy ukrywaniu pola jest <b>ostrzeżeniem</b>, nie blokadą — <code>grep</code> potwierdza brak ścieżki <code>Active[…] = false</code></li>
+  </ul></div>
+</section>
+
+<section data-group="10" class="group todo">
+  <div class="g-head"><span class="g-num">10</span><h3>Uprawnienia i higiena schematu</h3><span class="g-badge"></span></div>
+  <p class="meta"><b>Zależności:</b> Grupa 3, Grupa 6 &nbsp;·&nbsp; <b>Kroków:</b> 5 &nbsp;·&nbsp; <b>Testów:</b> — (grupa higieny)</p>
+  <div class="chips">
+    <code>DatabaseUpdate/Updater.cs</code><span style="font-size:11.5px;color:var(--dim)">(warunkowo)</span>
+    <code>CLAUDE.md</code>
+  </div>
+  <p style="font-size:13px;color:var(--dim)">Wniosek ze specyfikacji: <b>żadna zmiana w <code>Updater.cs</code> nie jest wymagana i projekt celowo od niej nie zależy.</b> <code>UpdateDatabaseAfterUpdateSchema</code> we wdrożonej paczce ma 7 bajtów IL — cały blok <code>#if !RELEASE</code> jest wycięty, więc nowy wpis tam po prostu się nie wykona. Ta grupa domyka temat świadomie.</p>
+  <ul class="steps">
+    <li data-step="10.1" class="step todo"><span class="sn">10.1</span>Odnotować decyzję o uprawnieniach w komentarzu przy <code>AdditionalExportedTypes.Add</code>: kolorowanie działa dla każdego zalogowanego (przez <code>INonSecuredObjectSpaceFactory</code>); ekran dostępny dla <code>Administrators</code> (<code>IsAdministrative = true</code>) bez ani jednego wpisu, jak dziś <code>CustomClass</code> i <code>WorkflowDefinition</code></li>
+    <li data-step="10.2" class="step todo"><span class="sn">10.2</span><b>Jeśli</b> padnie decyzja o dostępie dla roli <code>Default</code>: metoda wołana <b>bezwarunkowo</b>, <b>poza</b> <code>#if !RELEASE</code>, z nadaniami <b>poza</b> blokiem <code>if (role == null)</code> — inaczej na istniejącej bazie uprawnienia nigdy nie wejdą</li>
+    <li data-step="10.3" class="step todo"><span class="sn">10.3</span>Zweryfikować lokalnie powstanie tabeli: <code>dotnet run --project …Blazor.Server -- --updateDatabase</code>, sprawdzić kolumny w bazie</li>
+    <li data-step="10.4" class="step todo"><span class="sn">10.4</span>Korekty do <code>CLAUDE.md</code>: baza to <b>PostgreSQL</b>, nie SQL Server localdb; target <b>net8.0</b>, DevExpress <b>26.1.4</b>, nie 25.2; zmienna <code>XAF_UPDATE_DB</code> <b>istnieje</b> (<code>BlazorApplication.cs:37</code>, <code>trzy-repliki.sh:62</code>) — notatka fazy 1 była błędna. Dopisać zdanie o regułach do „File Locations"</li>
+    <li data-step="10.5" class="step todo"><span class="sn">10.5</span>Zweryfikować pełnym <code>git diff</code>, że żaden <code>.xafml</code> się nie zmienił i że <code>QueryMetadata</code> / <code>GetMetadataFingerprint</code> / <code>ComputeFingerprint</code> są nietknięte</li>
+  </ul>
+  <div class="accept"><b>Kryteria odbioru</b><ul>
+    <li>Tabela <code>AppearanceRule</code> powstaje krokiem <code>--updateDatabase</code> (lokalny odpowiednik A-27)</li>
+    <li>Decyzja o uprawnieniach zapisana w kodzie, nie w głowie autora</li>
+    <li><code>CLAUDE.md</code> nie kłamie o bazie, wersji DevExpressa ani o <code>XAF_UPDATE_DB</code></li>
+    <li>Zbiorcze potwierdzenie A-14 i A-26</li>
+  </ul></div>
+</section>
+
+<section data-group="11" class="group todo">
+  <div class="g-head"><span class="g-num">11</span><h3>Przegląd testów i uzupełnienie luk</h3><span class="g-badge"></span></div>
+  <p class="meta"><b>Zależności:</b> grupy 2–10 &nbsp;·&nbsp; <b>Kroków:</b> 5 &nbsp;·&nbsp; <b>Testów:</b> do 10 dodatkowych</p>
+  <div class="chips">
+    <code class="shared">Tests/CriteriaTests.cs</code>
+    <code class="shared">Tests/GraduationTests.cs</code>
+    <code class="shared">Tests/SchemaGuardTests.cs</code>
+    <code>Tests/*.cs</code>
+  </div>
+  <ul class="steps">
+    <li data-step="11.1" class="step todo"><span class="sn">11.1</span>Przejrzeć 36 testów z grup 2–9 — czy któryś sprawdza implementację zamiast zachowania</li>
+    <li data-step="11.2" class="step todo"><span class="sn">11.2</span>Zestawić testy z 29 kryteriami akceptacji; wskazać kryteria bez odpowiednika automatycznego (część jest z natury ręczna — nie dopisywać testów na siłę)</li>
+    <li data-step="11.3" class="step todo"><span class="sn">11.3</span>Dopisać <b>maksymalnie 10</b> testów w miejscach realnie odsłoniętych. Kandydaci: ścieżka <code>OnSaving()</code> → <code>Health</code>/<code>Diagnosis</code>/<code>CheckedOn</code> w jednym przebiegu; sklejanie wielu ostrzeżeń; reguła z pustym <code>Criteria</code> i <code>TargetItems</code> przez pełny łańcuch normalizacji</li>
+    <li data-step="11.4" class="step todo"><span class="sn">11.4</span>Sprawdzić, że w <code>CriteriaTests.cs</code> nie została martwa kopia obchodzenia drzewa</li>
+    <li data-step="11.5" class="step todo"><span class="sn">11.5</span>Uruchomić <b>cały</b> zestaw: <code>dotnet test XafXPODynAssem/XafXPODynAssem.Module.Tests</code></li>
+  </ul>
+  <div class="accept"><b>Kryteria odbioru</b><ul>
+    <li>Cały zestaw zielony: 61 + 36 + do 10 = <b>97–107 testów</b></li>
+    <li>Nie dopisano więcej niż 10 testów</li>
+    <li>Żaden istniejący test nie został zmieniony w sposób osłabiający jego wymowę</li>
+  </ul></div>
+</section>
+
+<section data-group="12" class="group todo">
+  <div class="g-head"><span class="g-num">12</span><h3>Weryfikacja ręczna na uruchomionej aplikacji</h3><span class="g-badge"></span></div>
+  <p class="meta"><b>Zależności:</b> Grupa 11 &nbsp;·&nbsp; <b>Kroków:</b> 6 &nbsp;·&nbsp; <b>Testów:</b> — (weryfikacja ręczna)</p>
+  <div class="chips"><code>verification/weryfikacja-reczna.md</code></div>
+  <p style="font-size:13px;color:var(--dim)">W repo nie ma testów E2E, więc ta grupa jest jedyną weryfikacją zachowania na żywym systemie. Uruchomienie: <code>dotnet run --project XafXPODynAssem/XafXPODynAssem.Blazor.Server</code>, <code>https://localhost:5001</code>, logowanie <code>Admin</code> bez hasła.</p>
+  <div class="vref"><b>Visual References</b> — sześć ekranów, odbiór na uruchomionej aplikacji
+    <dl>
+      <dt><code>screen:lista-regul</code> · <a href="../analysis/design-context/mockups/lista-regu-wygl-du.html">lista-regu-wygl-du.html</a></dt>
+      <dd><em>odbiór:</em> zrzut z aplikacji odpowiada makiecie w kolumnach, pasku akcji i wyróżnieniu wierszy (A-15)</dd>
+      <dt><code>screen:regula-definicja</code> · <a href="../analysis/design-context/mockups/regu-a-zak-adka-definicja.html">regu-a-zak-adka-definicja.html</a></dt>
+      <dd><em>odbiór:</em> reguła z literówką w nazwie pola pokazuje diagnozę z podpowiedzią „Czy chodziło o …?" (A-16)</dd>
+      <dt><code>screen:regula-wyglad</code> · <a href="../analysis/design-context/mockups/regu-a-zak-adka-wygl-d.html">regu-a-zak-adka-wygl-d.html</a></dt>
+      <dd><em>odbiór:</em> rola z próbką na górze, nadpisanie kolorem na dole i opisane jako awaryjne (A-17)</dd>
+      <dt><code>screen:czat-utworzenie</code> · <a href="../analysis/design-context/mockups/czat-utworzenie-regu-y-z-dyktowania.html">czat-utworzenie-regu-y-z-dyktowania.html</a></dt>
+      <dd><em>odbiór:</em> „zrób faktury niezapłacone na czerwono na listach" prowadzi do reguły nad istniejącym polem, z dopytaniem o brakującą część (A-04, A-08)</dd>
+      <dt><code>screen:czat-blad</code> · <a href="../analysis/design-context/mockups/czat-walidacja-odrzuca-bubla.html">czat-walidacja-odrzuca-bubla.html</a></dt>
+      <dd><em>odbiór:</em> „pokoloruj faktury gdzie saldo jest dodatnie" → odmowa z listą pól liczbowych i <b>zero rekordów</b> w tabeli (A-05, A-06)</dd>
+      <dt><code>screen:efekt-faktury</code> · <a href="../analysis/design-context/mockups/efekt-lista-faktur.html">efekt-lista-faktur.html</a></dt>
+      <dd><em>odbiór:</em> wiersze niezapłaconych pokolorowane, bez żadnego dodatkowego elementu interfejsu</dd>
+    </dl>
+  </div>
+  <ul class="steps">
+    <li data-step="12.1" class="step todo"><span class="sn">12.1</span>Ścieżka AI od zdania do koloru — A-04, A-05, A-06, A-07, A-08, z porównaniem przebiegu rozmowy z dwiema makietami czatu</li>
+    <li data-step="12.2" class="step todo"><span class="sn">12.2</span>Ekran reguł — A-15…A-20; wyłączenie reguły suwakiem zdejmuje kolorowanie po F5, bez restartu</li>
+    <li data-step="12.3" class="step todo"><span class="sn">12.3</span>Odporność — A-09 (reguła na skasowanej encji nie wywraca widoku), A-10 (<code>INSERT</code> z <code>Criteria = "[Kwotaa] &gt; 10"</code> → lista otwiera się bez kolorowania, wpis w logu), A-13</li>
+    <li data-step="12.4" class="step todo"><span class="sn">12.4</span><b>Lokalny odpowiednik A-02</b> — <code>INSERT</code> reguły wprost do bazy z pominięciem aplikacji, potem świeża sesja przeglądarki. Kolorowanie musi się pojawić bez restartu procesu. Dowodzi braku bufora w pamięci procesu <b>bez</b> trzech replik</li>
+    <li data-step="12.5" class="step todo"><span class="sn">12.5</span><b>A-22 — kierunek rozstrzygania priorytetu.</b> Dwie reguły na tym samym polu, <code>Priority</code> 10 (zielona) i 20 (czerwona). Oczekiwanie: wiersz czerwony, powtarzalnie. <b>Wariant awaryjny:</b> odwrócić <code>OrderBy</code> w <code>LoadRules()</code> (krok 5.3) i poprawić jedno zdanie w prompcie (krok 8.2). Nic więcej się nie zmienia</li>
+    <li data-step="12.6" class="step todo"><span class="sn">12.6</span><b>A-21 — parytet WinForms.</b> Uruchomić <code>XafXPODynAssem.Win</code> (jest w <code>XafXPODynAssem.slnx</code>), otworzyć tę samą listę, potwierdzić identyczne kolorowanie. Kryterium <b>nie</b> jest odłożone — działa lokalnie</li>
+  </ul>
+  <div class="accept"><b>Kryteria odbioru</b><ul>
+    <li><code>verification/weryfikacja-reczna.md</code> zawiera wynik dla każdego kryterium A-04…A-22 osiągalnego lokalnie, każdy z dowodem (zrzut, fragment logu, wynik SQL)</li>
+    <li>A-22 ma zapisany <b>rozstrzygnięty</b> kierunek, nie hipotezę; jeśli wypadł odwrotnie — poprawka naniesiona i odnotowana</li>
+    <li>Odchylenia od makiet wypisane jako lista, nie skwitowane zdaniem „zgodne"</li>
+    <li>A-01, A-02 (wersja trzyreplikowa), A-03 i A-27 <b>jawnie odnotowane jako odłożone</b> wraz z powodem</li>
+  </ul></div>
+</section>
+
+<h2 id="pokrycie">Pokrycie makiet</h2>
+<div class="card">
+<p style="margin-top:0">Źródło: <a href="../analysis/design-context/INDEX.md" target="_blank" rel="noopener">INDEX.md ↗</a> — 6 ekranów i 4 komponenty. Pełna macierz: <a href="visual-coverage.md" target="_blank" rel="noopener">visual-coverage.md ↗</a></p>
+<table>
+  <thead><tr><th>ID ekranu/komponentu</th><th>Pokryte przez grupę</th><th style="width:70px">Stan</th></tr></thead>
+  <tbody>
+  <tr><td><code>screen:lista-regul</code></td><td>Grupa 6 · Grupa 12</td><td class="pass">✅</td></tr>
+  <tr><td><code>screen:regula-definicja</code></td><td>Grupa 6 · Grupa 12</td><td class="pass">✅</td></tr>
+  <tr><td><code>screen:regula-wyglad</code></td><td>Grupa 6 · Grupa 12</td><td class="pass">✅</td></tr>
+  <tr><td><code>screen:czat-utworzenie</code></td><td>Grupa 7 · Grupa 12</td><td class="pass">✅</td></tr>
+  <tr><td><code>screen:czat-blad</code></td><td>Grupa 7 · Grupa 12</td><td class="pass">✅</td></tr>
+  <tr><td><code>screen:efekt-faktury</code></td><td>Grupa 5 · Grupa 12</td><td class="pass">✅</td></tr>
+  <tr><td><code>component:odznaka-stanu</code></td><td>Grupa 6 (krok 6.3 — trzy statyczne <code>[Appearance]</code>)</td><td class="pass">✅</td></tr>
+  <tr><td><code>component:probka-roli</code></td><td>Grupa 2 · Grupa 6</td><td class="pass">✅</td></tr>
+  <tr><td><code>component:panel-diagnozy</code></td><td>Grupa 6 (krok 6.5) · Grupa 4 (treść diagnozy)</td><td class="pass">✅</td></tr>
+  <tr><td><code>component:wywolanie-narzedzia</code></td><td>Grupa 7 (konwencja <code>PROBLEM:</code>/<code>MISSING:</code>)</td><td class="pass">✅</td></tr>
+  </tbody>
+</table>
+<p style="font-size:13px;color:var(--dim)"><b>Pozycje niepokryte:</b> brak — 10/10. Podwójny wpis (grupa budująca + grupa 12) nie jest duplikatem: to budowa i odbiór. <code>component:probka-roli</code> jest sprawdzalny dopiero po grupie 1, bo odcienie zależą od werdyktu rozpoznania.</p>
+</div>
+
+<h2 id="standardy">Zgodność ze standardami</h2>
+<div class="card">
+<p style="margin-top:0"><code>.maister/docs/standards/</code> ani <code>.maister/docs/INDEX.md</code> w tym repozytorium <b>nie istnieją</b> — nie ma plików standardów do zastosowania. Obowiązują konwencje odczytane z kodu:</p>
+<ul>
+  <li>Identyfikatory C# angielskie, napisy dla użytkownika polskie przez <code>[XafDisplayName]</code>; brak warstwy <code>.resx</code></li>
+  <li>Teksty <code>[Description]</code> narzędzi AI <b>angielskie</b> (kontrakt dla modelu), teksty odmowy <b>polskie</b></li>
+  <li>ORM: XPO. Konstruktor <code>(Session session)</code>, <code>SetPropertyValue(nameof(X), ref x, value)</code></li>
+  <li>Kontrolery w <code>Module/Controllers/*.cs</code>, wykrywane automatycznie — bez ręcznej rejestracji w żadnym <code>Startup.cs</code></li>
+  <li>Narzędzia AI: prywatne metody z <code>[Description]</code>, parametry wyłącznie prymitywne, błędy jako tekst, nigdy wyjątek przez granicę</li>
+  <li>Rejestracja typów trwałych przez <code>AdditionalExportedTypes.Add</code> w konstruktorze modułu</li>
+  <li><code>FontStyle</code> to <code>DevExpress.Drawing.DXFontStyle</code>, nie <code>System.Drawing.FontStyle</code></li>
+  <li>Brak koloru zwracamy jako <code>null</code>, nigdy <code>Color.Empty</code></li>
+  <li>Zasada repo: <b>pól nie usuwamy, dodajemy obok i ukrywamy stare</b> (<code>FieldTypeChangeGuard</code>)</li>
+</ul>
+</div>
+
+<h2 id="odlozone">Poza planem — świadomie odłożone</h2>
+<div class="card deferred">
+<p style="margin-top:0"><b>Wdrożenie na Proxmox LXC 200 wariantem (b)</b>: <code>docker compose down</code> → nowy obraz → <code>--updateDatabase</code> → <code>trzy-repliki.sh</code> → test osobno na 8101/8102/8103.</p>
+<p>Wraz z nim odłożone kryteria: <b>A-01</b> (reguła koloruje na wszystkich trzech replikach bez restartu), <b>A-02</b> w wersji trzyreplikowej, <b>A-03</b> (utworzenie reguły nie restartuje żadnej repliki), <b>A-27</b> (tabela powstaje krokiem <code>--updateDatabase</code> przed startem replik).</p>
+<p style="margin-bottom:0">Powód: <b>użytkownik wstrzymał aktualizację środowisk.</b> Transfer paczki 223 MB i tak jest krokiem zablokowanym dla agenta (<code>deploy/README-wdrozenie.md</code> §1). Lokalny odpowiednik A-02 i lokalne A-27 wchodzą do planu (kroki 12.4 i 10.3); A-21 (WinForms) nie jest odłożone — działa lokalnie.</p>
+</div>
+
+<h2>Uwagi</h2>
+<div class="card">
+<ul style="margin:0">
+  <li><b>Testy razem z kodem.</b> Każda grupa kodowa zaczyna od 2–8 testów i kończy uruchomieniem <b>wyłącznie</b> swoich testów, nie całego zestawu. Cały zestaw idzie raz, w grupie 11.</li>
+  <li><b>Istniejący projekt testowy.</b> <code>XafXPODynAssem.Module.Tests</code> już jest, ma 61 zielonych testów i jest w <code>XafXPODynAssem.slnx</code>. Nie zakładać go od nowa.</li>
+  <li><b>Nie sięgać po prototyp z gałęzi eksperymentalnej.</b> Został zarchiwizowany i skasowany; był sprzeczny ze specyfikacją (surowy kolor zamiast roli, brak walidatora, brak stanu reguły). Wzorce bierzemy z <code>Workflow.cs</code>, <code>CustomClass.cs</code> i <code>SchemaAIToolsProvider.cs</code> w tym repo.</li>
+  <li><b>Nie optymalizować przedwcześnie.</b> Pomiar rozstrzyga: przy tej skali reguł narzut mechanizmu jest niemierzalny. Jedyny twardy wymóg to pre-ładowanie w <code>OnActivated</code>.</li>
+  <li><b>Zaznaczać postęp.</b> Odhaczać kroki w <a href="implementation-plan.md" target="_blank" rel="noopener">implementation-plan.md ↗</a>; ten plik jest źródłem prawdy przy wznowieniu pracy.</li>
+</ul>
+</div>
+
+</main>
+</body>
+</html>
